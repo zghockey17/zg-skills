@@ -5,16 +5,13 @@ A row left blank is an assumption nobody made on purpose.
 
 | # | Branch | Choice | Why |
 | --- | --- | --- | --- |
-| 1 | Monitor scope | | |
-| 2 | Model policy | | |
-| 3 | Corpus policy | | |
-| 4 | Realism (webhook path) | | |
-| 5 | Control surface | | |
-| 6 | Reset semantics | | |
-| 7 | Capture mechanism | | |
-| 8 | Users | | |
-| 9 | Scenarios | | |
-| 10 | Sharing | | |
-| 11 | Where outcomes land | | |
+| 1 | Model policy | | |
+| 2 | Corpus policy | | |
+| 3 | Realism (webhook path) | | |
+| 4 | Reset semantics | | |
+| 5 | Capture mechanism | | |
+| 6 | Users | | |
+| 7 | Scenarios | | |
+| 8 | Where outcomes land | | |
 
 Judge policy: who grades a run and from what evidence.

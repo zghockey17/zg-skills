@@ -35,7 +35,7 @@ As a Claude Code plugin (recommended):
 /plugin install connector-eval-env@zg-skills
 ```
 
-Then invoke it as `/connector-eval-env` (verified with `claude --plugin-dir`; the plugin ships this one skill at its root, so the namespaced form is `/connector-eval-env:connector-eval-env`). Run `/reload-plugins` if the install summary asks for it.
+Then invoke it as `/connector-eval-env`. Run `/reload-plugins` if the install summary asks for it.
 
 As a personal skill, without the plugin system:
 
@@ -111,25 +111,7 @@ With Claude Code, describe what you want: "start the demo eval and send a record
 
 ## Example configuration
 
-`connectors/demo/adapter.json` is a complete configuration. The fields that matter most:
-
-```json
-{
-  "ports": {"vendor": 8226, "app": 8227, "model": 8228, "sidecar": 8230},
-  "upstream": "http://127.0.0.1:8228",
-  "env": {"MODEL_API_KEY": "demo-key-not-a-real-credential"},
-  "secret_env_keys": ["MODEL_API_KEY"],
-  "disposable": {"confirmed": true, "paths": ["app-state.json", "filed"]},
-  "stages": ["fetching", "redacting", "summarizing", "linking"],
-  "states": ["discovered", "filing", "filed", "failed"],
-  "llm_fingerprints": {
-    "redact": {"body_contains": "\"response_format\""},
-    "summarize": {"prompt_prefix": "You are a meeting summarization assistant"},
-    "link": {"prompt_prefix": "You are linking a meeting summary"}
-  },
-  "llm_call_budget": 3
-}
-```
+`connectors/demo/adapter.json` is a complete, working configuration to read and copy. `references/adapter-contract.md` documents every field.
 
 `upstream` is where the sidecar forwards model calls. For a real provider, set it to the provider base URL (or leave it out for `https://api.openai.com`), name an `env_file` that holds the key, and read `references/live-provider.md` first.
 
@@ -151,6 +133,7 @@ The engine assumes a pipeline shape: a vendor delivers records, the app processe
 | --- | --- |
 | `port 8226 for stub is already in use` | Something else holds a demo port. `lsof -i tcp:8226` to see what; change `ports` in `adapter.json` if it is yours to keep. The engine never kills a process it did not start. |
 | `up` says `already_running` | A session is live. Use it, or `down` first. |
+| `/connector-eval-env` is not found | The plugin ships this one skill at its root, so some hosts expose it namespaced as `/connector-eval-env:connector-eval-env`. |
 | Monitor shows "poll stale" | The `observe` hook raised or took over 3 s. `sessions/<stamp>/run/sidecar.log` has the reason. |
 | A record never appears after `arrive` | The app is not connected (no webhook URL at the vendor), or the scenario rejects the delivery (`stale-sig`). The vendor page lists every delivery and its status. |
 | `eval` reports `no redacted transcript captured` | The record never reached the redaction stage, or the adapter has no `transcript` hook and the poller saw no `redacted_words`. |

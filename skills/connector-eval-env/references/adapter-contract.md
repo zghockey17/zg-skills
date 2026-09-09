@@ -64,17 +64,17 @@ Request headers are never recorded. The proxy forwards `Authorization` upstream 
 
 All optional. `env` is the child environment the engine built (for the sidecar, the process environment).
 
-| Hook | Signature | Returns | Missing means |
-| --- | --- | --- | --- |
-| `processes` | `(adapter, env, session_dir)` | list of `{role, argv, cwd, port?, match?}` | only the stub and sidecar start |
-| `seed` | `(adapter, env, session_dir)` | dict, printed by `up` | no seeding |
-| `reset` | `(adapter, env, old_session_dir, new_session_dir)` | dict | `reset` refuses |
-| `observe` | `(adapter, env)` | `{items: {id: row}, connections: {...}, deliveries: {...}}` (dicts or lists of rows) | no `*.changed` events |
-| `in_flight` | `(adapter, env)` | `{item_id, rec, job_reserved, ambiguous}` | model calls uncorrelated |
-| `transcript` | `(adapter, env, rec)` | redacted text with speaker names, or None | checks use `redacted_words` from item events |
-| `artifacts` | `(adapter, env, session_dir, rec)` | `(ok, detail)` | `artifacts_exist` fails with a stated reason |
-| `status` | `(adapter, env, session_dir)` | dict of booleans, `ok` optional | `status` reports processes only |
-| `down` | `(adapter, env, session_dir)` | dict | nothing to undo |
+| Hook | Signature | Called by | Returns | Missing means |
+| --- | --- | --- | --- | --- |
+| `processes` | `(adapter, env, session_dir)` | `up`, `reset` | list of `{role, argv, cwd, port?, match?}` to start after the stub and sidecar (app server, worker) | only the stub and sidecar start |
+| `seed` | `(adapter, env, session_dir)` | `up`, `reset` | dict, printed by `up` | no seeding |
+| `reset` | `(adapter, env, old_session_dir, new_session_dir)` | `reset` | dict; deletes disposable data, verifying the target is throwaway and raising otherwise | `reset` refuses |
+| `observe` | `(adapter, env)` | sidecar, once a second | `{items: {id: row}, connections: {...}, deliveries: {...}}` (dicts or lists of rows) | no `*.changed` events |
+| `in_flight` | `(adapter, env)` | sidecar, per model call | `{item_id, rec, job_reserved, ambiguous}` from the reserved job row | model calls uncorrelated |
+| `transcript` | `(adapter, env, rec)` | `eval` | redacted text with speaker names, or None | checks use `redacted_words` from item events |
+| `artifacts` | `(adapter, env, session_dir, rec)` | `eval` | `(ok, detail)` for the filed artifacts | `artifacts_exist` fails with a stated reason |
+| `status` | `(adapter, env, session_dir)` | `status` | dict of booleans, `ok` optional | `status` reports processes only |
+| `down` | `(adapter, env, session_dir)` | `down` | dict; undoes any app modification `up` made | nothing to undo |
 
 Row keys the poller projects: items `item_id, external_id, state, stage, last_error, redaction_counts, title, redacted_words`; connections `connection_id, status, review_before_filing, redact`; deliveries `delivery_id, external_id, state, attempts, event`. Extra keys are ignored.
 
@@ -86,7 +86,7 @@ Row keys the poller projects: items `item_id, external_id, state, stage, last_er
 
 ## CLI
 
-`python3 engine/evalenv.py <connector> <verb> [args]`: `up`, `down`, `status`, `reset`, `arrive <rec_id> [--account slug] [--no-webhook]`, `backfill <n> [--account slug]`, `scenario <name>`, `eval [rec_id]`, `judge <rec_id> --verdict pass|fail --reason "..." [--evidence 1,2,3]`, `finding "<title>" --expected "..." --actual "..." --repro "..." [--severity low|med|high]`, `snapshot`.
+`python3 engine/evalenv.py <connector> <verb> [args]`. Verbs: `up`, `down`, `status`, `reset`, `arrive`, `backfill`, `scenario`, `eval`, `judge`, `finding`, `snapshot`. The full argument syntax and what each does are in `README.md` under Usage.
 
 `EVALENV_SESSIONS_ROOT` moves the sessions folder (tests use it).
 

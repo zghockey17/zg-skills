@@ -12,7 +12,7 @@ root walks the six phases against this template; every `_about_*` key in
 | `stub.py` | The mock vendor: its API, settings page, signed webhooks, scenarios |
 | `seed.py` | The users and settings your app needs before a session |
 | `corpus/` | Records in the vendor's shape plus `targets.json` with planted spans |
-| `decisions.md` | The eleven grill branches, each with a choice and a reason |
+| `decisions.md` | The eight grill branches, each with a choice and a reason |
 | `vendor.md` | Confirmed / Assumed / Unknown claims about the vendor, one scenario per assumption |
 
 What works before any of this is replaced: `up` starts the placeholder stub,

@@ -6,7 +6,7 @@ The first real adapter, a wearable-recorder connector for a meeting app, took th
 
 ## Phase 1: Grill (writes `decisions.md`)
 
-Walk `references/grill-checklist.md` with whoever owns the integration. Eleven branches; each gets a choice and a reason in the table. Two choices shape everything after:
+Walk `references/grill-checklist.md` with whoever owns the integration. Eight branches; each gets a choice and a reason in the table. Two choices shape everything after:
 
 - **Model policy.** Real provider every run, or the stand-in? Real is the point when checking the model's work; the stand-in is for pipeline bugs and for CI.
 - **Capture mechanism.** The app has to send model calls to the sidecar. Three ways: base-URL config (best if the app already reads one), a request middleware that rewrites the provider host (survives rebases, catches new call sites), or patching each call site (last resort).
@@ -33,27 +33,13 @@ Read the app and fill:
 
 ## Phase 4: Build (writes `adapter.py`, `seed.py`, `corpus/`)
 
-The hooks in `adapter.py`, in the order the engine uses them:
-
-| Hook | Called by | Returns |
-| --- | --- | --- |
-| `processes(adapter, env, session_dir)` | `up`, `reset` | List of `{role, argv, cwd, port}` to start after the stub and sidecar: the app server, the worker |
-| `seed(adapter, env, session_dir)` | `up`, `reset` | Runs your seed; returns anything worth printing |
-| `observe(adapter, env)` | sidecar, once a second | `{items, connections, deliveries}` rows keyed by id, with the keys in the contract. Query the tables, or an internal endpoint |
-| `in_flight(adapter, env)` | sidecar, per model call | `{item_id, rec, job_reserved, ambiguous}` from the reserved job row |
-| `transcript(adapter, env, rec)` | `eval` | The stored redacted text including speaker names, or None |
-| `artifacts(adapter, env, session_dir, rec)` | `eval` | `(ok, detail)` for the filed artifacts |
-| `status(adapter, env, session_dir)` | `status` | Booleans only: model routed through the sidecar, on the throwaway database, key present |
-| `reset(adapter, env, old_dir, new_dir)` | `reset` | Deletes disposable data. Verify the target is throwaway inside the hook and raise otherwise |
-| `down(adapter, env, session_dir)` | `down` | Undoes any app modification `up` made |
-
-Skip a hook and the engine degrades that feature: no `observe` means no item events (the monitor shows only webhook and model calls); no `in_flight` means model calls are logged uncorrelated; no `transcript` means checks use the text the poller attached; no `artifacts` means that check fails with a stated reason.
+Write the hooks in `adapter.py`, the seed, and the corpus. The hook signatures, which verb calls each one, what it returns, and what a missing hook degrades are all in `references/adapter-contract.md`. Every hook is optional; skip one and the engine drops that feature rather than failing. Crib from `connectors/demo/adapter.py`.
 
 If the app needs a file placed to route model calls (a provider or middleware), place it in `processes` or a `seed` step and remove it in `down`; record the original file's hash and refuse to place over a file that differs. Never commit that file to the app.
 
 Corpus: records in the vendor's exact detail shape, plus `targets.json` with planted spans and must-not-cut names. Clean records too.
 
-**Exit:** `up` is green and one `arrive` files a record with every event kind in the log. Then run one more real record before calling it done; per-task review does not catch a column that does not exist.
+**Exit:** `up` is green and one `arrive` files a record end to end, producing every event kind a successful record should: `action.arrive`, `api.request`, `connection.changed`, `webhook.sent`, `webhook.result`, `delivery.changed`, `item.changed`, `llm.request`, `llm.response`. Then run one more real record before calling it done; per-task review does not catch a column that does not exist.
 
 ## Phase 5: Run sessions
 
