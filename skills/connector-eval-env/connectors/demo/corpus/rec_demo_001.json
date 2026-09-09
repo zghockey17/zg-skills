@@ -1,0 +1,50 @@
+{
+  "success": true,
+  "data": {
+    "id": "rec_demo_001",
+    "title": "Weekly sync with planted spans",
+    "recording_at": "2026-01-12T10:00:00Z",
+    "created_at": "2026-01-12T10:00:00Z",
+    "duration": 33,
+    "state": "completed",
+    "language": "en",
+    "transcript": [
+      {
+        "speaker": "Priya",
+        "text": "Morning, let's start with the release checklist and then the customer call.",
+        "start": 0.0,
+        "end": 4.8
+      },
+      {
+        "speaker": "Omar",
+        "text": "The build is green, the last two flaky tests are quarantined for now.",
+        "start": 5.3,
+        "end": 10.5
+      },
+      {
+        "speaker": "Priya",
+        "text": "Good. Dana, can you call the vendor back today? Their number is 415-555-0142.",
+        "start": 11.0,
+        "end": 16.2
+      },
+      {
+        "speaker": "Dana",
+        "text": "Will do. Also a heads up, I'm out Thursday, follow-up for my knee surgery.",
+        "start": 16.7,
+        "end": 22.3
+      },
+      {
+        "speaker": "Omar",
+        "text": "Noted, we'll move the design review to Friday morning.",
+        "start": 22.8,
+        "end": 26.4
+      },
+      {
+        "speaker": "Priya",
+        "text": "Last thing, the launch post draft is in the shared folder, comments by Wednesday.",
+        "start": 26.9,
+        "end": 32.5
+      }
+    ]
+  }
+}

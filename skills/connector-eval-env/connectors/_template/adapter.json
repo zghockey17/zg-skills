@@ -1,0 +1,71 @@
+{
+  "connector": "_template",
+  "_comment": "Placeholder adapter. Every value is fictional. Each `_about_*` key says what a real value looks like and where the engine reads it. Delete the `_about_*` keys once filled in.",
+
+  "description": "Placeholder for <vendor> connector of <your app>",
+  "_about_description": "One line shown by `up`. Name the real vendor and app.",
+
+  "ports": {"vendor": 8326, "app": 8327, "sidecar": 8330},
+  "_about_ports": "Loopback ports. `vendor` is where the engine starts your stub; `sidecar` is the capture proxy and monitor; `app` is only used to print an app URL. Add more keys for processes your hooks start. Read by engine/evalenv.py and engine/sidecar.py.",
+
+  "stub": "stub.py",
+  "_about_stub": "Relative path to the mock vendor the engine starts. Read by engine/evalenv.py _engine_processes.",
+
+  "hooks": "adapter.py",
+  "_about_hooks": "Relative path to the hooks module (processes, seed, reset, observe, in_flight, transcript, artifacts, status, down). Read by engine/adapter.py.",
+
+  "vendor_page": "/settings",
+  "_about_vendor_page": "Path on the stub that plays the vendor dashboard. Printed by `up`.",
+
+  "upstream": null,
+  "_about_upstream": "Model provider base URL the sidecar forwards to. null means https://api.openai.com (a real provider; see references/live-provider.md). The demo points this at a local stand-in. EVALENV_UPSTREAM overrides at runtime.",
+
+  "env": {"APP_ENV": "eval", "MODEL_BASE_URL": "http://127.0.0.1:8330"},
+  "_about_env": "Static environment handed to every process. Point your app's model base URL at the sidecar port so calls are captured. Read by engine/evalenv.py build_env.",
+
+  "env_file": null,
+  "_about_env_file": "Optional path to a .env whose values enter the child environment (a real provider key lives here, never in this file). Relative paths resolve from this folder; ~ is expanded. null means no file is read.",
+
+  "secret_env_keys": ["OPENAI_API_KEY"],
+  "_about_secret_env_keys": "Names whose values must never reach stdout, pids.json, or the log. The CLI scrubs them from every printed object.",
+
+  "disposable": {"confirmed": false, "description": "Say here what your reset hook deletes", "paths": []},
+  "_about_disposable": "`reset` refuses to run until confirmed is true AND a reset hook exists. Describe exactly what gets deleted (a throwaway database, a session-relative folder). Never point this at real data.",
+
+  "users": [
+    {"slug": "alice", "email": "alice@example.test", "name": "Alice Placeholder", "api_key": "placeholder_key_alice_0001"}
+  ],
+  "_about_users": "Seeded accounts. The stub keys its API by api_key; your seed hook creates the matching app users. Fictional values only.",
+
+  "scenarios": ["off", "dup", "out-of-order", "slow-fetch", "retry-500", "stale-sig", "revoke-key"],
+  "_about_scenarios": "Names the CLI accepts for `scenario <name>`. Each Assumed row from references/vendor-research.md becomes one. Implemented in stub.py.",
+
+  "stages": ["fetching", "redacting", "summarizing", "linking"],
+  "_about_stages": "Your pipeline's stage column values, in order. The stage_order check fails on a backwards move. Read by engine/evals.py.",
+
+  "states": ["discovered", "filing", "filed", "failed"],
+  "processing_state": "filing",
+  "filed_state": "filed",
+  "failed_state": "failed",
+  "terminal_ok_states": [],
+  "_about_states": "Your item table's state values. processing_state is the one that carries a stage; filed_state is success; terminal_ok_states are non-success ends that are not failures (held for review, dismissed). Read by engine/evals.py and the monitor.",
+
+  "llm_fingerprints": {
+    "redact": {"body_contains": "\"response_format\""},
+    "summarize": {"prompt_prefix": "You are a meeting summarization assistant"},
+    "link": {"prompt_prefix": "You are linking a meeting summary"}
+  },
+  "_about_llm_fingerprints": "How the proxy names each model call. body_contains matches the serialized request body; prompt_prefix matches the start of any message content. Keys become the monitor tabs. Read by engine/sidecar.py classify_stage.",
+
+  "llm_call_budget": 3,
+  "_about_llm_call_budget": "Model calls allowed per record per run. The llm_call_budget check fails above it.",
+
+  "stage_caps_ms": {"redact": 60000, "summarize": 30000, "link": 20000},
+  "_about_stage_caps_ms": "Latency cap per model-call stage. The stage_caps check fails above it.",
+
+  "labels": {"discovered": "Waiting", "filing": "Processing", "filed": "Filed", "failed": "Could not file"},
+  "_about_labels": "Optional display names for states on the monitor.",
+
+  "limitations": ["Replace with what this adapter does not verify"],
+  "_about_limitations": "Shown in the monitor's Known limitations section and in every snapshot."
+}

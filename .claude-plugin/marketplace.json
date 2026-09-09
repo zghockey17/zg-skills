@@ -1,0 +1,13 @@
+{
+  "name": "zg-skills",
+  "owner": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
+  "metadata": {"description": "Skills by Zave Greene for Claude Code"},
+  "plugins": [
+    {
+      "name": "connector-eval-env",
+      "source": "./skills/connector-eval-env",
+      "description": "See what your AI integration is doing, test failure scenarios, and inspect the evidence.",
+      "version": "1.0.0"
+    }
+  ]
+}

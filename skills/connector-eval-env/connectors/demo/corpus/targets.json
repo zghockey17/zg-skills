@@ -1,0 +1,60 @@
+{
+  "_readme": "Expected redaction targets for mechanical scoring. 'substring' is the exact text that must be absent from the redacted transcript; 'category' is the redaction_counts bucket the cut lands in; 'transcript_index' is the 0-based segment index. must_not_cut names speakers or names that must survive. best_effort=true spans are desirable but not scored as a hard fail. Over-redaction is acceptable; under-redaction on a listed span fails.",
+  "recordings": {
+    "rec_demo_001": {
+      "file": "rec_demo_001.json",
+      "title": "Weekly sync with planted spans",
+      "spans": [
+        {
+          "transcript_index": 2,
+          "category": "contact",
+          "substring": "415-555-0142",
+          "note": "vendor phone number"
+        },
+        {
+          "transcript_index": 3,
+          "category": "health",
+          "substring": "knee surgery",
+          "note": "health disclosure"
+        }
+      ],
+      "must_not_cut": [
+        "Priya",
+        "Dana",
+        "Omar"
+      ]
+    },
+    "rec_demo_002": {
+      "file": "rec_demo_002.json",
+      "title": "Design critique, onboarding flow",
+      "spans": [],
+      "must_not_cut": [
+        "Dana",
+        "Omar",
+        "Priya"
+      ]
+    },
+    "rec_demo_003": {
+      "file": "rec_demo_003.json",
+      "title": "Vendor negotiation, hosting renewal",
+      "spans": [
+        {
+          "transcript_index": 0,
+          "category": "compensation",
+          "substring": "$48,000",
+          "note": "contract figure"
+        },
+        {
+          "transcript_index": 3,
+          "category": "contact",
+          "substring": "646-555-0199",
+          "note": "account manager phone"
+        }
+      ],
+      "must_not_cut": [
+        "Priya",
+        "Omar"
+      ]
+    }
+  }
+}

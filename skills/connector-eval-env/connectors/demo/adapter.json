@@ -1,0 +1,43 @@
+{
+  "connector": "demo",
+  "description": "A runnable demo: a fake recorder vendor, a fake notes app, and a local stand-in model, all Python on loopback.",
+  "ports": {"vendor": 8226, "app": 8227, "model": 8228, "sidecar": 8230},
+  "stub": "stub.py",
+  "hooks": "adapter.py",
+  "vendor_page": "/settings",
+  "upstream": "http://127.0.0.1:8228",
+  "env": {
+    "DEMO_APP_PORT": "8227",
+    "DEMO_MODEL_PORT": "8228",
+    "MODEL_API_KEY": "demo-key-not-a-real-credential"
+  },
+  "secret_env_keys": ["MODEL_API_KEY"],
+  "disposable": {
+    "confirmed": true,
+    "description": "The demo app keeps all state in files under the session folder. Nothing outside it is ever deleted.",
+    "paths": ["app-state.json", "filed"]
+  },
+  "users": [
+    {"slug": "priya", "email": "priya@example.test", "name": "Priya Demo", "api_key": "demo_key_priya_0001"},
+    {"slug": "omar", "email": "omar@example.test", "name": "Omar Demo", "api_key": "demo_key_omar_0002"}
+  ],
+  "scenarios": ["off", "dup", "out-of-order", "slow-fetch", "retry-500", "stale-sig", "revoke-key"],
+  "stages": ["fetching", "redacting", "summarizing", "linking"],
+  "states": ["discovered", "filing", "filed", "failed"],
+  "processing_state": "filing",
+  "filed_state": "filed",
+  "failed_state": "failed",
+  "terminal_ok_states": [],
+  "llm_fingerprints": {
+    "redact": {"body_contains": "\"response_format\""},
+    "summarize": {"prompt_prefix": "You are a meeting summarization assistant"},
+    "link": {"prompt_prefix": "You are linking a meeting summary"}
+  },
+  "llm_call_budget": 3,
+  "stage_caps_ms": {"redact": 5000, "summarize": 5000, "link": 5000},
+  "labels": {"discovered": "Waiting", "filing": "Processing", "filed": "Filed", "failed": "Could not file"},
+  "limitations": [
+    "The model is a local deterministic stand-in, so evals here test the pipeline, not model quality.",
+    "The demo app has one planted bug: it does not deduplicate repeated webhook deliveries. The dup scenario exposes it."
+  ]
+}

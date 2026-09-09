@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3ea">
+<title>Connector eval monitor</title>
+<style>
+:root{
+  /* Paper palette from the design spec: this page is the "monitor", visibly
+     distinct from the product UI it watches. */
+  --paper:#f7f3ea;--paper-2:#efe9db;--surface:#fffdf7;--ink:#17150f;--ink-2:#4a463c;--rule:#cfc7b3;
+  --cc:#1f4f5b;--cc-soft:#dfeaec;--ok:#2f6b3a;--ok-soft:#e3efe4;--warn:#8a5a0c;
+  --warn-soft:#f6e6c6;--bad:#8a2c2c;--bad-soft:#f1dcdc;
+  --serif:"Fraunces",Georgia,serif;--sans:"Inter",system-ui,sans-serif;--mono:"JetBrains Mono",Menlo,monospace;
+
+  /* Type scale. Five sizes, each used for one role at more than one place; the
+     four hierarchy levels (run > list > record > report) separate by size and
+     weight alone. Nothing under 11px. */
+  --fs-title:20px;   /* serif 500, run title + selected record name */
+  --fs-section:16px; /* serif 600, section headings (Findings, Report) */
+  --fs-body:13px;    /* sans, list rows, subheads, kv, findings, empty states */
+  --fs-detail:12px;  /* meta, table cells, timeline, tabs, prompts, diff */
+  --fs-label:11px;   /* 600 uppercase, badges, chips, th, roles, count pills, tags */
+
+  /* Concentric radii: outer = inner + padding. Card 10 wraps flush children;
+     boxes 6 sit inside the detail pane (18px pad, treated as separate surface);
+     chips 4. */
+  --r-card:10px;--r-box:6px;--r-chip:4px;
+
+  --hair:1px solid var(--rule);           /* the one hairline, one weight, one color */
+  --shadow-card:0 1px 2px rgba(23,21,15,.05),0 6px 16px -8px rgba(23,21,15,.10);
+  --ease:cubic-bezier(.23,1,.32,1);       /* strong ease-out for color transitions */
+}
+*{box-sizing:border-box}
+html{background:var(--paper-2);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;color-scheme:light}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;
+  background:var(--paper);font-variant-numeric:tabular-nums;text-wrap:pretty}
+h1,h2,h3{text-wrap:balance}
+.wrap{max-width:1440px;margin:0 auto;padding:18px 22px 60px}
+
+/* ---- header: status of the whole run --------------------------------------- */
+header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+  padding:6px 0 16px;border-bottom:var(--hair)}
+.h-title{font-family:var(--serif);font-size:var(--fs-title);font-weight:500;line-height:1.15;margin:0}
+.h-sub{font-size:var(--fs-detail);color:var(--ink-2);margin:4px 0 0}
+.h-sub b{color:var(--ink);font-weight:600}
+.counts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;align-items:center}
+.count{display:inline-flex;align-items:baseline;gap:5px;font-size:var(--fs-label);font-weight:600;
+  letter-spacing:.04em;padding:4px 9px;border-radius:var(--r-chip);white-space:nowrap}
+.count .n{font-size:var(--fs-body);font-weight:700}
+.count.zero{opacity:.5}
+.count.c-wait{background:var(--paper-2);color:var(--ink-2)}
+.count.c-proc{background:var(--cc-soft);color:var(--cc)}
+.count.c-warn{background:var(--warn-soft);color:var(--warn)}
+.count.c-ok{background:var(--ok-soft);color:var(--ok)}
+.count.c-bad{background:var(--bad-soft);color:var(--bad)}
+.h-stats{font-size:var(--fs-detail);color:var(--ink-2);margin:10px 0 0}
+.h-stats b{color:var(--ink);font-weight:600}
+.status{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.live{font-size:var(--fs-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ok);
+  display:inline-flex;align-items:center;gap:6px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;
+  transition:background-color 150ms var(--ease)}
+.live.frozen{color:var(--ink-2)}.live.frozen i{background:var(--ink-2)}
+.stale{font-size:var(--fs-label);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);
+  background:var(--warn-soft);padding:3px 8px;border-radius:var(--r-chip);
+  opacity:0;transition:opacity 150ms var(--ease)}
+.stale.on{opacity:1}
+
+/* ---- main grid: list of records + one record's story ----------------- */
+.grid{display:grid;grid-template-columns:288px 1fr;gap:0;border:var(--hair);
+  border-radius:var(--r-card);overflow:hidden;margin-top:18px;background:var(--surface);
+  box-shadow:var(--shadow-card)}
+.list{border-right:var(--hair);max-height:72vh;overflow-y:auto}
+.list-head{font-size:var(--fs-label);font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-2);padding:11px 14px;border-bottom:var(--hair);background:var(--paper)}
+.row{padding:0 14px;min-height:44px;border-bottom:var(--hair);display:flex;align-items:center;gap:8px;
+  font-size:var(--fs-body);cursor:pointer;transition:background-color 150ms var(--ease)}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--paper)}
+.row:focus-visible{outline:2px solid var(--cc);outline-offset:-2px}
+.row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.active{background:var(--cc-soft);box-shadow:inset 3px 0 0 var(--cc)}
+.row.active:hover{background:var(--cc-soft)}
+.badge{font-size:var(--fs-label);letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;
+  border-radius:var(--r-chip);font-weight:600;white-space:nowrap;transition:background-color 150ms var(--ease),color 150ms var(--ease)}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}
+.b-wait{background:var(--paper-2);color:var(--ink-2)}
+.b-proc{background:var(--cc-soft);color:var(--cc)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.chip{font-size:var(--fs-label);letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;
+  border-radius:var(--r-chip);font-weight:600}
+.chip.pass{background:var(--ok-soft);color:var(--ok)}.chip.fail{background:var(--bad-soft);color:var(--bad)}
+
+/* ---- detail: one record's story ----------------------------------------- */
+.detail{padding:18px 20px;min-width:0}
+.rec-name{font-family:var(--serif);font-size:var(--fs-title);font-weight:500;line-height:1.15;margin:0 0 14px}
+.tl{display:flex;font-size:var(--fs-detail);margin-bottom:10px}
+.tl span{flex:1;padding:7px 8px;border:var(--hair);border-left:0;text-align:center;color:var(--ink-2);
+  line-height:1.25}
+.tl span:first-child{border-left:var(--hair);border-radius:var(--r-box) 0 0 var(--r-box)}
+.tl span:last-child{border-radius:0 var(--r-box) var(--r-box) 0}
+.tl span.done{background:var(--ok-soft);color:var(--ok)}
+.tl span.now{background:var(--cc-soft);color:var(--cc);font-weight:600}
+.tl span.fail{background:var(--bad-soft);color:var(--bad);font-weight:600}
+.tl small{display:block;font-family:var(--mono);font-size:var(--fs-label);margin-top:2px}
+.tl-error{font-size:var(--fs-detail);color:var(--bad);background:var(--bad-soft);border-radius:var(--r-box);
+  padding:8px 11px;margin-bottom:14px}
+.tl-error b{font-weight:600}
+.tabs{display:flex;gap:4px;border-bottom:var(--hair);margin-bottom:14px;font-size:var(--fs-detail)}
+.tabs span{min-height:40px;display:inline-flex;align-items:center;padding:0 10px;color:var(--ink-2);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color 150ms var(--ease),border-color 150ms var(--ease)}
+.tabs span:hover{color:var(--ink)}
+.tabs span.on{color:var(--cc);border-bottom-color:var(--cc);font-weight:600}
+.tabs span:focus-visible{outline:2px solid var(--cc);outline-offset:-2px;border-radius:var(--r-chip)}
+.meta-line{font-size:var(--fs-detail);color:var(--ink-2);margin-bottom:10px}
+.meta-line b{color:var(--ink);font-weight:600}
+.msg{border:var(--hair);border-radius:var(--r-box);margin:8px 0;background:var(--surface);overflow:hidden}
+.msg .role{font-size:var(--fs-label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
+  font-weight:600;padding:6px 11px;border-bottom:var(--hair);background:var(--paper-2)}
+.msg pre{margin:0;padding:10px 11px;font-family:var(--mono);font-size:var(--fs-detail);line-height:1.55;
+  white-space:pre-wrap;word-break:break-word}
+.role-lbl{font-size:var(--fs-label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
+  font-weight:600;margin:10px 0 4px}
+.completion{border:var(--hair);border-radius:var(--r-box);background:var(--surface);padding:10px 11px;
+  font-family:var(--mono);font-size:var(--fs-detail);line-height:1.55;white-space:pre-wrap;word-break:break-word;margin:4px 0}
+details{margin:10px 0;font-size:var(--fs-detail)}
+details pre{font-family:var(--mono);font-size:var(--fs-label);background:var(--surface);border:var(--hair);
+  border-radius:var(--r-box);padding:11px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+summary{cursor:pointer;color:var(--cc);transition:color 150ms var(--ease)}
+summary:hover{color:var(--ink)}
+summary:focus-visible{outline:2px solid var(--cc);outline-offset:2px;border-radius:var(--r-chip)}
+
+/* ---- diff --------------------------------------------------------------------*/
+.diff-legend{font-size:var(--fs-detail);color:var(--ink-2);margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.diff-legend .swatch{display:inline-flex;align-items:center;gap:5px}
+.diff-legend .cut,.diff-legend .ins,.diff-legend .kept-eg{font-size:var(--fs-detail);padding:1px 5px;border-radius:3px}
+.diff{font-family:var(--mono);font-size:var(--fs-detail);line-height:1.8;background:var(--surface);border:var(--hair);
+  border-radius:var(--r-box);padding:12px 13px;white-space:pre-wrap;word-break:break-word}
+.cut{background:var(--bad-soft);color:var(--bad);text-decoration:line-through;text-decoration-color:rgba(138,44,44,.55);
+  padding:0 2px;border-radius:3px}
+.kept-eg{background:transparent;color:var(--ink)}
+.ins{background:var(--cc-soft);color:var(--cc);padding:0 4px;border-radius:3px}
+.cat{font-family:var(--sans);font-size:var(--fs-label);font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--ink-2);background:var(--paper-2);padding:1px 6px;border-radius:var(--r-chip);margin:0 3px}
+.cats{font-size:var(--fs-detail);color:var(--ink-2);margin-bottom:8px}
+.cats b{color:var(--ink);font-weight:600}
+.empty{color:var(--ink-2);padding:12px 0;max-width:70ch}
+.empty b{color:var(--ink);font-weight:600}
+.empty code{font-family:var(--mono);font-size:var(--fs-detail);background:var(--paper-2);padding:1px 5px;border-radius:3px}
+
+/* ---- tables ----------------------------------------------------------------- */
+table{border-collapse:collapse;width:100%;font-size:var(--fs-detail);margin:6px 0}
+th{text-align:left;font-size:var(--fs-label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+  font-weight:600;padding:7px 8px;border-bottom:var(--hair);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th.sortable:focus-visible{outline:2px solid var(--cc);outline-offset:-2px}
+th .arrow{color:var(--cc);font-weight:700}
+td{padding:7px 8px;border-bottom:var(--hair);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.mono,.evkind{font-family:var(--mono);font-size:var(--fs-label)}
+td.num{font-family:var(--mono);text-align:right}
+.tbl-scroll{overflow-x:auto}
+
+/* ---- findings + report ------------------------------------------------------ */
+section.block{margin-top:38px;border-top:var(--hair);padding-top:22px}
+h2{font-family:var(--serif);font-size:var(--fs-section);font-weight:600;margin:0 0 6px}
+.section-lead{font-size:var(--fs-body);color:var(--ink-2);margin:0 0 14px;max-width:80ch}
+.section-lead b{color:var(--ink);font-weight:600}
+h3{font-size:var(--fs-label);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:20px 0 8px}
+.finding{border-left:4px solid var(--bad);background:var(--bad-soft);padding:12px 14px;margin:10px 0;
+  border-radius:0 var(--r-box) var(--r-box) 0}
+.finding.sev-low{border-color:var(--ink-2);background:var(--paper-2)}
+.finding.sev-med{border-color:var(--warn);background:var(--warn-soft)}
+.finding .ftitle{font-weight:600}
+.finding .frow{font-size:var(--fs-detail);color:var(--ink-2);margin-top:3px}
+.finding .frow b{color:var(--ink)}
+.kv{font-size:var(--fs-body);color:var(--ink-2)}.kv b{color:var(--ink);font-weight:600}
+.report-card{border:var(--hair);border-radius:var(--r-card);background:var(--surface);padding:2px 16px;
+  box-shadow:var(--shadow-card);margin-top:6px}
+ul.limits{font-size:var(--fs-body);color:var(--ink-2);margin:6px 0;padding-left:20px}
+ul.limits li{margin:3px 0}
+.foot{margin-top:24px;font-size:var(--fs-label);color:var(--ink-2);font-family:var(--mono)}
+
+@media (max-width:820px){
+  .grid{grid-template-columns:1fr}
+  .list{border-right:0;border-bottom:var(--hair);max-height:40vh}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<!-- Snapshot slot. `evalenv <connector> snapshot` inlines the session and events here.
+     If this element has non-empty JSON, it becomes window.EVALENV_SNAPSHOT below.
+     The slot is read with textContent and JSON.parse only; nothing in it is ever
+     interpreted as HTML. -->
+<script id="evalenv-data" type="application/json"></script>
+
+<script>
+"use strict";
+const RENDERER_VERSION = "3";
+const SCHEMA_VERSION = "1";
+
+// Read the inline snapshot slot if it holds JSON. This runs before the app so a
+// snapshot file (fixture inlined) renders with no network at all.
+(function loadSlot(){
+  const slot = document.getElementById("evalenv-data");
+  if (!slot) return;
+  const text = (slot.textContent || "").trim();
+  if (!text) return;
+  try { window.EVALENV_SNAPSHOT = JSON.parse(text); }
+  catch (e) { /* leave undefined; live mode will run */ }
+})();
+
+// ---- model -----------------------------------------------------------------
+// The whole page is a fold over the event log. `model` holds derived state;
+// applyEvent folds one event in; render() reads model and paints the DOM.
+// Stages and states come from the adapter via /session (live) or the snapshot.
+// Defaults keep an older log renderable when the session block is missing.
+const cfg = {
+  llmStages:["redact","summarize","link"],   // model-call stages, tab per stage
+  states:["discovered","filing","filed","failed"],
+  filedState:"filed", failedState:"failed", processingState:"filing",
+  limitations:[], labels:{},
+};
+function humanize(s){ return String(s || "").replace(/_/g, " ").replace(/^\w/, c => c.toUpperCase()); }
+function stateLabel(state){ return cfg.labels[state] || humanize(state); }
+function stateClass(state){
+  if (state === cfg.filedState) return "b-ok";
+  if (state === cfg.failedState) return "b-bad";
+  if (state === cfg.processingState) return "b-proc";
+  if (/pending|review|hold/.test(state || "")) return "b-warn";
+  return "b-wait";
+}
+function countClass(state){ return stateClass(state).replace("b-", "c-"); }
+function applyConfig(s){
+  if (!s) return;
+  if (Array.isArray(s.llm_stages) && s.llm_stages.length) cfg.llmStages = s.llm_stages;
+  if (Array.isArray(s.states) && s.states.length) cfg.states = s.states;
+  if (s.filed_state) cfg.filedState = s.filed_state;
+  if (s.failed_state) cfg.failedState = s.failed_state;
+  if (s.processing_state) cfg.processingState = s.processing_state;
+  if (Array.isArray(s.limitations)) cfg.limitations = s.limitations;
+  if (s.labels && typeof s.labels === "object") cfg.labels = s.labels;
+}
+
+const model = {
+  session:null, connector:null, started:null, frozenAt:null,
+  events:[],            // every event in id order
+  recs:new Map(),       // recId -> rec state
+  recOrder:[],          // insertion order of recIds
+  itemState:new Map(),  // item_id -> latest item.changed data (for count line)
+  scenario:null,
+  connection:null,      // latest connection.changed data
+  llmCalls:0, totalTokens:0,
+  lastStaleId:0, lastItemChangedId:0, lastStaleTs:0, lastItemTs:0,
+  newestTs:0,          // timestamp of the newest event folded (events arrive in ts order)
+  findings:[],
+  selected:null,
+  maxFoldedId:0,       // highest event id already folded; guards against replays
+};
+
+function recFor(ev){
+  // An event belongs to a record by its top-level rec, or by external_id on
+  // item.changed (which the poller emits with a null top-level rec).
+  if (ev.rec) return ev.rec;
+  if (ev.kind === "item.changed" && ev.data && ev.data.external_id) return ev.data.external_id;
+  return null;
+}
+
+function ensureRec(recId){
+  if (!recId) return null;
+  let r = model.recs.get(recId);
+  if (!r){
+    r = {id:recId, title:null, state:null, stage:null, itemId:null, events:[],
+      stages:{}, times:{}, judge:null, rules:[],
+      lastError:null, redactionCounts:null, redactedWords:null};
+    model.recs.set(recId, r);
+    model.recOrder.push(recId);
+  }
+  return r;
+}
+
+function tsMs(ts){ const t = Date.parse(ts); return isNaN(t) ? 0 : t; }
+
+function applyEvent(ev){
+  // A native EventSource reconnect reopens the original URL (after=0) and
+  // replays the whole log, so folding is not idempotent on its own. Ignore any
+  // event whose id was already folded; ids are monotonic from the sidecar.
+  if (ev.id != null && ev.id <= model.maxFoldedId) return;
+  if (ev.id != null) model.maxFoldedId = ev.id;
+  model.events.push(ev);
+  const evTs = tsMs(ev.ts);
+  if (evTs > model.newestTs) model.newestTs = evTs;
+  const recId = recFor(ev);
+  const r = recId ? ensureRec(recId) : null;
+  if (r) r.events.push(ev);
+  const d = ev.data || {};
+
+  switch (ev.kind){
+    case "scenario.changed":
+      model.scenario = d.scenario; break;
+    case "connection.changed":
+      model.connection = d; break;
+    case "webhook.result":
+      if (r && !r.times.webhook && Number(d.status) >= 200 && Number(d.status) < 300)
+        r.times.webhook = tsMs(ev.ts);
+      break;
+    case "api.request":
+      // The detail fetch is api.request whose path ends in the rec id.
+      if (r && typeof d.path === "string" && d.path.indexOf("/" + r.id) !== -1){
+        if (!r.times.fetchStart) r.times.fetchStart = tsMs(ev.ts);
+        r.times.fetchEnd = tsMs(ev.ts) + (Number(d.latency_ms) || 0);
+        r.times.fetchStatus = Number(d.status);
+      }
+      break;
+    case "item.changed":
+      if (r){
+        if (d.title) r.title = d.title;
+        if (d.item_id != null){ r.itemId = d.item_id; model.itemState.set(d.item_id, d); }
+        r.state = d.state;
+        r.stage = d.stage;           // drives the granular product label (Fetching, Redacting...)
+        if (d.last_error) r.lastError = d.last_error;
+        if (d.redaction_counts != null) r.redactionCounts = d.redaction_counts;
+        if (d.redacted_words != null) r.redactedWords = d.redacted_words;
+        if (d.state === cfg.processingState && !r.times.claimed)
+          r.times.claimed = tsMs(ev.ts);
+        if (d.state === cfg.filedState && !r.times.filed) r.times.filed = tsMs(ev.ts);
+      }
+      model.lastItemChangedId = ev.id; model.lastItemTs = tsMs(ev.ts);
+      break;
+    case "llm.request":
+      if (r && d.stage){
+        r.stages[d.stage] = r.stages[d.stage] || {};
+        r.stages[d.stage].request = ev; r.stages[d.stage].reqTs = tsMs(ev.ts);
+      }
+      break;
+    case "llm.response":
+      model.llmCalls += 1;
+      if (d.tokens && d.tokens.total) model.totalTokens += Number(d.tokens.total) || 0;
+      if (r && d.stage){
+        r.stages[d.stage] = r.stages[d.stage] || {};
+        r.stages[d.stage].response = ev;
+        r.stages[d.stage].ms = Number(d.ms) || 0;
+      }
+      break;
+    case "eval.rule":
+      if (r) r.rules.push(d); break;
+    case "eval.judge":
+      if (r) r.judge = d; break;
+    case "finding":
+      model.findings.push({rec:recId, ...d}); break;
+    case "poll.stale":
+      model.lastStaleId = ev.id; model.lastStaleTs = tsMs(ev.ts); break;
+    default: break; // action.*, webhook.sent, delivery.changed: shown in Events tab only
+  }
+}
+
+// ---- word-level diff (LCS) -------------------------------------------------
+// Longest common subsequence over tokens. Tokens only in the original are
+// deletions (cut), tokens only in the redacted output are insertions (kept),
+// shared tokens are unchanged.
+//
+// The dp matrix is O(n*m) in memory, so a real meeting transcript (tens of
+// thousands of words) would allocate gigabytes. Cap the cell count: past the
+// cap, fall back to a line-level matrix (far fewer tokens), and past the cap
+// even there, render a plain notice instead of a diff.
+const DIFF_CELL_CAP = 4000000;
+
+// Each token is a run of non-space plus its trailing whitespace, so there are no
+// bare-space tokens for the LCS to match spuriously mid-word. That keeps cut and
+// inserted tokens in clean contiguous runs (a bare-space match would interleave
+// them and split a redacted span across the marker).
+function wordTokens(s){ return (s || "").match(/\S+\s*/g) || []; }
+function lineTokens(s){ return (s || "").split(/\n/).filter(t => t.length > 0); }
+
+function lcsTokens(a, b){
+  const n = a.length, m = b.length;
+  const dp = Array.from({length:n+1}, () => new Int32Array(m+1));
+  for (let i = n-1; i >= 0; i--)
+    for (let j = m-1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const out = [];
+  let i = 0, j = 0;
+  while (i < n && j < m){
+    if (a[i] === b[j]){ out.push(["same", a[i]]); i++; j++; }
+    else if (dp[i+1][j] >= dp[i][j+1]){ out.push(["cut", a[i]]); i++; }
+    else { out.push(["add", b[j]]); j++; }
+  }
+  while (i < n){ out.push(["cut", a[i]]); i++; }
+  while (j < m){ out.push(["add", b[j]]); j++; }
+  return out;
+}
+
+// {mode:"tokens", sep, ops} renders a diff; sep goes between tokens (empty for
+// word mode since whitespace is its own token, "\n" for line mode). {mode:
+// "notice", text} means the input was too large to diff at all.
+function diffPlan(aStr, bStr){
+  const aw = wordTokens(aStr), bw = wordTokens(bStr);
+  if (aw.length * bw.length <= DIFF_CELL_CAP)
+    return {mode:"tokens", sep:"", ops:lcsTokens(aw, bw)};
+  const al = lineTokens(aStr), bl = lineTokens(bStr);
+  if (al.length * bl.length <= DIFF_CELL_CAP)
+    return {mode:"tokens", sep:"\n", ops:lcsTokens(al, bl)};
+  return {mode:"notice",
+    text:"transcript too long to diff (" + aw.length + " vs " + bw.length + " tokens)"};
+}
+
+// ---- transcript extraction -------------------------------------------------
+// The first model-call stage is treated as the redaction step. Its user prompt
+// is expected to carry a TRANSCRIPT section of numbered lines "N [speaker]: text"
+// followed by a CATEGORIES or OUTPUT section. Pull the segment lines, strip the
+// prefix, and join with newlines. If that section is not found, diff the whole
+// user content, which keeps any other prompt shape working.
+function transcriptFromRedact(r){
+  const stage = r.stages[cfg.llmStages[0]];
+  if (!stage || !stage.request) return null;
+  const prompt = stage.request.data && stage.request.data.prompt;
+  const messages = prompt && prompt.messages;
+  if (!Array.isArray(messages)) return null;
+  let user = null;
+  for (const msg of messages) if (msg && msg.role === "user") user = msg;
+  if (!user || typeof user.content !== "string") return null;
+
+  const lines = user.content.split("\n");
+  const start = lines.findIndex(l => l.startsWith("TRANSCRIPT"));
+  if (start !== -1){
+    const segs = [];
+    for (let k = start + 1; k < lines.length; k++){
+      const line = lines[k];
+      if (line.startsWith("CATEGORIES") || line.startsWith("OUTPUT")) break;
+      const m = line.match(/^\d+ \[[^\]]*\]: (.*)$/);
+      if (m) segs.push(m[1]);
+    }
+    if (segs.length) return segs.join("\n");
+  }
+  return user.content;
+}
+
+function completionText(stage){
+  const resp = stage && stage.response;
+  const body = resp && resp.data && resp.data.completion;
+  const choices = body && body.choices;
+  if (Array.isArray(choices) && choices[0] && choices[0].message)
+    return choices[0].message.content || "";
+  return "";
+}
+
+function parseCounts(raw){
+  if (raw == null) return null;
+  if (typeof raw === "object") return raw;
+  try { const p = JSON.parse(raw); return (p && typeof p === "object") ? p : null; }
+  catch (e) { return null; }
+}
+
+// ---- eval chip -------------------------------------------------------------
+function chipFor(r){
+  if (r.judge) return r.judge.verdict === "pass" ? "pass" : "fail";
+  if (r.rules.length){
+    return r.rules.every(x => x.pass) ? "pass" : "fail";
+  }
+  return null;
+}
+
+// Plain-language label for a record. The processing state resolves to the
+// current stage; the rest show the state name. Event kinds never appear here,
+// only in the Events tab.
+function recLabel(r){
+  if (r.state === cfg.processingState) return r.stage ? humanize(r.stage) : "Processing";
+  return r.state ? stateLabel(r.state) : "Unknown";
+}
+
+// ---- DOM helpers (textContent only; never innerHTML with event data) --------
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+// Consistent unit style: ms under a second (integer), seconds with one decimal
+// above, thousands separated. Numbers render with tabular-nums (set on body).
+function fmtMs(ms){
+  if (ms == null) return "";
+  if (ms >= 1000) return (ms/1000).toFixed(1) + " s";
+  return Math.round(ms).toLocaleString() + " ms";
+}
+
+// ---- render ----------------------------------------------------------------
+function countsByState(){
+  const counts = {};
+  for (const s of cfg.states) counts[s] = 0;
+  for (const d of model.itemState.values())
+    if (counts[d.state] != null) counts[d.state] += 1;
+  return counts;
+}
+
+function isStale(){
+  // Stale while the latest poll.stale is more recent than the latest item.changed
+  // and still within 5 s of the newest event. Once newer events land more than
+  // 5 s past it, the environment has moved on and the badge clears. Using the
+  // newest event timestamp (not wall-clock now) keeps snapshot deterministic.
+  if (!model.lastStaleId) return false;
+  if (model.lastStaleId <= model.lastItemChangedId) return false;
+  return (model.newestTs - model.lastStaleTs) <= 5000;
+}
+
+function selectRec(recId){
+  model.selected = recId;
+  scheduleRender();
+}
+
+function renderHeader(){
+  const h = el("header", "top");
+  const left = el("div");
+  left.appendChild(el("h1", "h-title", "Connector eval monitor"));
+
+  const sub = el("p", "h-sub");
+  sub.appendChild(el("b", null, model.connector || "?"));
+  sub.appendChild(document.createTextNode(" · session " + (model.session || "?")
+    + (model.started ? " · started " + model.started : "")));
+  left.appendChild(sub);
+
+  // Count pills: whole-run status at a glance, in the reserved status colors.
+  const counts = countsByState();
+  const pills = el("div", "counts");
+  for (const key of cfg.states){
+    const n = counts[key];
+    const pill = el("span", "count " + countClass(key) + (n === 0 ? " zero" : ""));
+    pill.appendChild(el("span", "n", String(n)));
+    pill.appendChild(document.createTextNode(stateLabel(key)));
+    pills.appendChild(pill);
+  }
+  left.appendChild(pills);
+
+  const stats = el("p", "h-stats");
+  stats.appendChild(document.createTextNode("scenario "));
+  stats.appendChild(el("b", null, model.scenario || "off"));
+  stats.appendChild(document.createTextNode("  ·  model calls "));
+  stats.appendChild(el("b", null, String(model.llmCalls)));
+  stats.appendChild(document.createTextNode("  ·  "));
+  stats.appendChild(el("b", null, model.totalTokens.toLocaleString()));
+  stats.appendChild(document.createTextNode(" tokens"));
+  // No dollar cost: the adapter provides no price today, so none is invented.
+  left.appendChild(stats);
+  h.appendChild(left);
+
+  const right = el("div", "status");
+  const live = el("span", "live" + (model.frozenAt ? " frozen" : ""));
+  live.appendChild(el("i"));
+  live.appendChild(document.createTextNode(model.frozenAt ? ("frozen at event " + model.frozenAt) : "live"));
+  right.appendChild(live);
+  const stale = el("span", "stale" + (isStale() ? " on" : ""), "poll stale");
+  stale.setAttribute("aria-live", "polite");
+  right.appendChild(stale);
+  h.appendChild(right);
+  return h;
+}
+
+function renderList(){
+  const list = el("div", "list");
+  list.appendChild(el("div", "list-head", "Records"));
+  for (const recId of model.recOrder){
+    const r = model.recs.get(recId);
+    const row = el("div", "row" + (recId === model.selected ? " active" : ""));
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.setAttribute("aria-pressed", recId === model.selected ? "true" : "false");
+    row.dataset.rec = recId;
+    row.appendChild(el("span", "grow", r.title || r.id));
+    const chip = chipFor(r);
+    if (chip) row.appendChild(el("span", "chip " + chip, chip.toUpperCase()));
+    row.appendChild(el("span", "badge " + stateClass(r.state), recLabel(r)));
+    row.addEventListener("click", () => selectRec(recId));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); selectRec(recId); }
+    });
+    list.appendChild(row);
+  }
+  if (!model.recOrder.length)
+    list.appendChild(emptyState("No records yet.",
+      "Run ", "evalenv <connector> arrive <id>", " or ", "evalenv <connector> backfill <n>", " to send one through the pipeline."));
+  return list;
+}
+
+// A designed empty state: a bold headline plus a sentence naming what appears
+// here and what causes it. Optional inline <code> segments for commands.
+function emptyState(headline, ...parts){
+  const box = el("div", "empty");
+  box.appendChild(el("b", null, headline + " "));
+  for (let i = 0; i < parts.length; i++){
+    // odd indices are code spans, even indices plain text
+    if (i % 2 === 1) box.appendChild(el("code", null, parts[i]));
+    else box.appendChild(document.createTextNode(parts[i]));
+  }
+  return box;
+}
+
+let nowTimer = null;
+function renderTimeline(r){
+  const tl = el("div", "tl");
+  const steps = [];
+  const claimedMs = (r.times.claimed && r.times.webhook) ? r.times.claimed - r.times.webhook : null;
+  const fetchMs = (r.times.fetchEnd && r.times.fetchStart) ? r.times.fetchEnd - r.times.fetchStart : null;
+  steps.push({name:"webhook", done:!!r.times.webhook, ms:r.times.webhook ? 0 : null});
+  steps.push({name:"claimed", done:!!r.times.claimed, ms:claimedMs});
+  steps.push({name:"fetch", done:!!r.times.fetchEnd, ms:fetchMs,
+    fail:r.times.fetchStatus && r.times.fetchStatus >= 400});
+  for (const s of cfg.llmStages){
+    const st = r.stages[s];
+    steps.push({name:s, done:!!(st && st.response), ms:st ? st.ms : null,
+      now:!!(st && st.request && !st.response), reqTs:st ? st.reqTs : null});
+  }
+  steps.push({name:"filed", done:!!r.times.filed, ms:null});
+
+  let nowReqTs = null;
+  for (const s of steps){
+    let cls = "";
+    if (s.fail) cls = "fail";
+    else if (s.now) cls = "now";
+    else if (s.done) cls = "done";
+    const span = el("span", cls);
+    span.appendChild(document.createTextNode(s.name));
+    let sub = "";
+    if (s.now){
+      // Live elapsed counter on the current stage; ticked by nowTimer below.
+      nowReqTs = s.reqTs;
+      const small = el("small", null, "0.0 s");
+      small.id = "now-elapsed";
+      span.appendChild(small);
+    } else if (s.done && s.ms != null){
+      sub = (s.ms === 0 ? "+0 ms" : fmtMs(s.ms));
+    }
+    if (sub) span.appendChild(el("small", null, sub));
+    tl.appendChild(span);
+  }
+
+  // One interval, restarted each render. Writes only the counter's text, so it
+  // does not trigger a full repaint; cleared when nothing is in progress.
+  if (nowTimer){ clearInterval(nowTimer); nowTimer = null; }
+  if (nowReqTs){
+    const tick = () => {
+      const node = document.getElementById("now-elapsed");
+      if (!node){ clearInterval(nowTimer); nowTimer = null; return; }
+      node.textContent = fmtMs(Date.now() - nowReqTs);
+    };
+    tick();
+    nowTimer = setInterval(tick, 200);
+  }
+  return tl;
+}
+
+function tabs(){ return cfg.llmStages.map(humanize).concat(["Diff", "Events"]); }
+const activeTab = {name:null};
+
+function renderStageTab(r, stageName){
+  const box = el("div");
+  const stage = r.stages[stageName];
+  if (!stage || !stage.request){
+    box.appendChild(emptyState("No " + stageName + " call yet.",
+      "The prompt, completion, model, tokens and latency for the " + stageName + " step appear here once the pipeline reaches it."));
+    return box;
+  }
+  const req = stage.request.data || {};
+  const resp = stage.response ? stage.response.data : null;
+  const meta = el("div", "meta-line");
+  const bits = [];
+  if (req.model) bits.push(req.model);
+  if (resp && resp.tokens) bits.push("prompt " + (resp.tokens.prompt || "?") + " tokens");
+  if (resp) bits.push("response " + (resp.tokens && resp.tokens.completion || "?") + " tokens");
+  if (resp) bits.push(fmtMs(resp.ms));
+  if (resp) bits.push("status " + resp.status);
+  meta.textContent = bits.join(" · ");
+  box.appendChild(meta);
+
+  const prompt = req.prompt;
+  const messages = prompt && prompt.messages;
+  if (Array.isArray(messages)){
+    for (const msg of messages){
+      const m = el("div", "msg");
+      m.appendChild(el("div", "role", msg.role || "message"));
+      const pre = el("pre");
+      pre.textContent = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content, null, 2);
+      m.appendChild(pre);
+      box.appendChild(m);
+    }
+  }
+  const compText = completionText(stage);
+  if (compText){
+    box.appendChild(el("div", "role-lbl", "completion"));
+    box.appendChild(el("div", "completion", compText));
+  } else if (resp){
+    box.appendChild(emptyState("No completion text.", "The model returned a response with no message content."));
+  }
+  const det = el("details");
+  det.appendChild(el("summary", null, "Raw JSON"));
+  const pre = el("pre");
+  pre.textContent = JSON.stringify({request:req.prompt, response:resp && resp.completion}, null, 2);
+  det.appendChild(pre);
+  box.appendChild(det);
+  return box;
+}
+
+// Renders a diff span run. Groups the LCS ops so a cut span is followed by the
+// category tag pulled from the redaction marker that replaced it; unmatched
+// insertions render as an "inserted" marker. Legend above names cut/kept/inserted.
+const REDACT_MARK = /\[redacted:\s*([^\]]+)\]/i;
+function renderDiffOps(container, plan){
+  const ops = plan.ops, sep = plan.sep || "";
+  const joinAdds = (from) => {
+    let j = from, toks = [];
+    while (j < ops.length && ops[j][0] === "add"){ toks.push(ops[j][1]); j++; }
+    return {text:toks.join(sep), next:j};
+  };
+  let i = 0, first = true;
+  const gap = () => { if (sep && !first) container.appendChild(document.createTextNode(sep)); first = false; };
+  while (i < ops.length){
+    const [op, tok] = ops[i];
+    if (op === "same"){ gap(); container.appendChild(document.createTextNode(tok)); i++; continue; }
+    if (op === "cut"){
+      let words = [];
+      while (i < ops.length && ops[i][0] === "cut"){ words.push(ops[i][1]); i++; }
+      gap();
+      container.appendChild(el("span", "cut", words.join(sep)));
+      if (i < ops.length && ops[i][0] === "add"){
+        const run = joinAdds(i);
+        const m = run.text.match(REDACT_MARK);
+        if (m){ container.appendChild(el("span", "cat", m[1].trim())); i = run.next; }
+      }
+      continue;
+    }
+    // add not preceded by a cut: a redaction marker shows as its category tag,
+    // anything else as a plain inserted span.
+    const run = joinAdds(i);
+    const m = run.text.match(REDACT_MARK);
+    gap();
+    container.appendChild(m ? el("span", "cat", m[1].trim()) : el("span", "ins", run.text));
+    i = run.next;
+  }
+}
+
+function renderDiffTab(r){
+  const box = el("div");
+  const conn = model.connection;
+  if (conn){
+    const line = el("div", "cats");
+    const toggles = conn.redact || {};
+    const parts = Object.keys(toggles).map(k => k + " " + (toggles[k] ? "on" : "off"));
+    line.appendChild(document.createTextNode("toggles: "));
+    line.appendChild(el("b", null, parts.join(", ") || "none"));
+    line.appendChild(document.createTextNode("  ·  review before filing: "));
+    line.appendChild(el("b", null, conn.review_before_filing ? "on" : "off"));
+    box.appendChild(line);
+  }
+  const counts = parseCounts(r.redactionCounts);
+  if (counts){
+    const c = el("div", "cats");
+    c.appendChild(document.createTextNode("redactions by category: "));
+    c.appendChild(el("b", null, Object.keys(counts).map(k => k + " " + counts[k]).join(" · ")));
+    box.appendChild(c);
+  }
+  const original = transcriptFromRedact(r);
+  if (original == null || r.redactedWords == null){
+    box.appendChild(emptyState("No diff yet.",
+      "The transcript-versus-filed diff appears once the record has a redaction prompt and filed redacted words. This record has not reached that point."));
+    return box;
+  }
+
+  // Legend: the three states a reader will see in the diff below.
+  const legend = el("div", "diff-legend");
+  const mk = (cls, sample, note) => {
+    const s = el("span", "swatch");
+    s.appendChild(el("span", cls, sample));
+    s.appendChild(document.createTextNode(note));
+    return s;
+  };
+  legend.appendChild(mk("cut", "cut", " removed before filing"));
+  legend.appendChild(mk("cat", "inserted", " the redaction marker that replaced it, tagged with its category"));
+  legend.appendChild(mk("kept-eg", "kept", " unchanged, stored verbatim"));
+  box.appendChild(legend);
+
+  const plan = diffPlan(original, r.redactedWords);
+  if (plan.mode === "notice"){
+    box.appendChild(el("div", "empty", plan.text));
+    return box;
+  }
+  const diff = el("div", "diff");
+  renderDiffOps(diff, plan);
+  box.appendChild(diff);
+  return box;
+}
+
+function summarizeEvent(ev){
+  const d = ev.data || {};
+  switch (ev.kind){
+    case "item.changed": return (d.state || "") + (d.stage ? " / " + d.stage : "");
+    case "api.request": return d.method + " " + d.path + " -> " + d.status;
+    case "webhook.sent": return d.event + " attempt " + d.attempt;
+    case "webhook.result": return d.event + " -> " + d.status;
+    case "llm.request": return (d.stage || "?") + " request";
+    case "llm.response": return (d.stage || "?") + " -> " + d.status + " " + fmtMs(d.ms);
+    case "delivery.changed": return d.event + " " + d.state + " (" + d.attempts + ")";
+    case "eval.rule": return d.check + " " + (d.pass ? "pass" : "fail");
+    case "eval.judge": return "judge " + d.verdict;
+    case "finding": return d.finding_id + " " + d.title;
+    case "action.arrive": return (d.args || []).join(" ");
+    case "scenario.changed": return d.scenario;
+    default: return "";
+  }
+}
+
+function renderEventsTab(r){
+  const box = el("div", "tbl-scroll");
+  if (!r.events.length){
+    box.appendChild(emptyState("No events for this record yet.",
+      "Every raw event tagged to this record appears here in id order."));
+    return box;
+  }
+  const t = el("table");
+  const thead = el("tr");
+  ["ID","TS","KIND","SUMMARY"].forEach(h => thead.appendChild(el("th", null, h)));
+  t.appendChild(thead);
+  for (const ev of r.events){
+    const tr = el("tr");
+    tr.appendChild(el("td", "mono", String(ev.id)));
+    tr.appendChild(el("td", "mono", (ev.ts || "").replace("T", " ").replace("Z", "")));
+    tr.appendChild(el("td", "evkind", ev.kind));
+    tr.appendChild(el("td", null, summarizeEvent(ev)));
+    t.appendChild(tr);
+  }
+  box.appendChild(t);
+  return box;
+}
+
+function renderDetail(){
+  const detail = el("div", "detail");
+  const r = model.selected ? model.recs.get(model.selected) : null;
+  if (!r){
+    detail.appendChild(emptyState("No record selected.",
+      "Pick a record on the left to see its timeline, the model prompts and completions, the redaction diff, and its raw events. Arrow keys move the selection; number keys switch tabs."));
+    return detail;
+  }
+  detail.appendChild(el("h2", "rec-name", r.title || r.id));
+  detail.appendChild(renderTimeline(r));
+
+  // Failed-stage error reads directly under the timeline, not hidden in a tab.
+  const fetchFailed = r.times.fetchStatus && r.times.fetchStatus >= 400;
+  if (r.state === "failed" || fetchFailed || r.lastError){
+    const err = el("div", "tl-error");
+    err.appendChild(el("b", null, "Could not file. "));
+    err.appendChild(document.createTextNode(r.lastError || "The pipeline stopped before filing."));
+    detail.appendChild(err);
+  }
+
+  const TABS = tabs();
+  if (!activeTab.name || TABS.indexOf(activeTab.name) === -1) activeTab.name = TABS[0];
+  const tabs_ = el("div", "tabs");
+  tabs_.setAttribute("role", "tablist");
+  TABS.forEach((name, idx) => {
+    const span = el("span", name === activeTab.name ? "on" : null, name);
+    span.tabIndex = 0;
+    span.setAttribute("role", "tab");
+    span.setAttribute("aria-selected", name === activeTab.name ? "true" : "false");
+    span.title = "Tab " + (idx + 1);
+    span.addEventListener("click", () => { activeTab.name = name; scheduleRender(); });
+    span.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); activeTab.name = name; scheduleRender(); }
+    });
+    tabs_.appendChild(span);
+  });
+  detail.appendChild(tabs_);
+
+  let body;
+  const stageIdx = TABS.indexOf(activeTab.name);
+  if (stageIdx > -1 && stageIdx < cfg.llmStages.length) body = renderStageTab(r, cfg.llmStages[stageIdx]);
+  else if (activeTab.name === "Diff") body = renderDiffTab(r);
+  else body = renderEventsTab(r);
+  detail.appendChild(body);
+  return detail;
+}
+
+function renderFindings(){
+  const s = el("section", "block");
+  s.appendChild(el("h2", null, "Findings"));
+  if (!model.findings.length){
+    s.appendChild(emptyState("No findings.",
+      "A finding is logged when the environment catches the connector doing something wrong. None recorded this session."));
+    return s;
+  }
+  for (const f of model.findings){
+    const sev = f.severity === "low" ? "sev-low" : f.severity === "med" ? "sev-med" : "";
+    const box = el("div", "finding " + sev);
+    box.appendChild(el("div", "ftitle", (f.finding_id ? f.finding_id + " · " : "") + (f.title || "")));
+    const add = (label, val) => {
+      if (!val) return;
+      const row = el("div", "frow");
+      row.appendChild(el("b", null, label + ": "));
+      row.appendChild(document.createTextNode(val));
+      box.appendChild(row);
+    };
+    add("rec", f.rec);
+    add("expected", f.expected);
+    add("actual", f.actual);
+    add("repro", f.repro);
+    add("severity", f.severity);
+    s.appendChild(box);
+  }
+  return s;
+}
+
+// Report table sort. Clicking a header sorts the rows; STATE sorts by the
+// adapter's state order rather than alphabetically. No library.
+function stateRank(state){ const i = cfg.states.indexOf(state); return i === -1 ? 99 : i; }
+const reportSort = {col:"state", dir:1};
+function sortedRecs(){
+  const recs = model.recOrder.map(id => model.recs.get(id));
+  const col = reportSort.col, dir = reportSort.dir;
+  const key = (r) => {
+    if (col === "state") return stateRank(r.state);
+    if (col === "rec") return r.id || "";
+    if (col === "title") return (r.title || "").toLowerCase();
+    return 0;
+  };
+  return recs.slice().sort((a, b) => {
+    const ka = key(a), kb = key(b);
+    if (ka < kb) return -1 * dir;
+    if (ka > kb) return 1 * dir;
+    return 0;
+  });
+}
+
+function renderReport(){
+  const s = el("section", "block");
+  s.appendChild(el("h2", null, "Report"));
+
+  // Stand-alone lead: what was run, then what passed and failed, in that order,
+  // so a first-time reader of a frozen snapshot is oriented before the table.
+  const counts = countsByState();
+  const total = model.recOrder.length;
+  const passed = model.recOrder.filter(id => chipFor(model.recs.get(id)) === "pass").length;
+  const failed = model.recOrder.filter(id => chipFor(model.recs.get(id)) === "fail").length;
+  const lead = el("p", "section-lead");
+  lead.appendChild(document.createTextNode("Connector "));
+  lead.appendChild(el("b", null, model.connector || "?"));
+  lead.appendChild(document.createTextNode(" ran "));
+  lead.appendChild(el("b", null, total + (total === 1 ? " record" : " records")));
+  lead.appendChild(document.createTextNode(" in session " + (model.session || "?") + ". "));
+  lead.appendChild(el("b", null, (counts[cfg.filedState] || 0) + " " + stateLabel(cfg.filedState).toLowerCase()));
+  lead.appendChild(document.createTextNode(", " + (counts[cfg.failedState] || 0) + " " + stateLabel(cfg.failedState).toLowerCase() + ". Evals: "));
+  lead.appendChild(el("b", null, passed + " passed"));
+  lead.appendChild(document.createTextNode(", " + failed + " failed, " + model.findings.length
+    + (model.findings.length === 1 ? " finding" : " findings") + " below. Per-record timings and where each stopped are in the table; open a row above to see the prompts and diff."));
+  s.appendChild(lead);
+
+  s.appendChild(el("h3", null, "Environment"));
+  const env = el("div", "kv");
+  env.appendChild(el("b", null, "connector "));
+  env.appendChild(document.createTextNode((model.connector || "?") + "   "));
+  env.appendChild(el("b", null, "session "));
+  env.appendChild(document.createTextNode((model.session || "?") + "   "));
+  env.appendChild(el("b", null, "started "));
+  env.appendChild(document.createTextNode((model.started || "?") + "   "));
+  env.appendChild(el("b", null, "scenario "));
+  env.appendChild(document.createTextNode(model.scenario || "off"));
+  s.appendChild(env);
+
+  s.appendChild(el("h3", null, "Records"));
+  if (!total){
+    s.appendChild(emptyState("No records in this session.",
+      "The table fills in as records move through the pipeline."));
+  } else {
+    const scroll = el("div", "tbl-scroll report-card");
+    const t = el("table");
+    const head = el("tr");
+    // Sortable columns get a role and keyboard activation; STATE is the default.
+    const cols = [["REC","rec"],["TITLE","title"],["STATE","state"],
+      ["CLAIMED",null],["FETCH",null]]
+      .concat(cfg.llmStages.map(s => [s.toUpperCase(), null]))
+      .concat([["MODEL CALLS",null],["RULES",null],["JUDGE",null]]);
+    for (const [label, sortKey] of cols){
+      const th = el("th", sortKey ? "sortable" : null);
+      th.appendChild(document.createTextNode(label));
+      if (sortKey){
+        th.tabIndex = 0;
+        th.setAttribute("role", "button");
+        th.setAttribute("aria-label", "Sort by " + label.toLowerCase());
+        if (reportSort.col === sortKey)
+          th.appendChild(el("span", "arrow", reportSort.dir === 1 ? " ↑" : " ↓"));
+        const doSort = () => {
+          if (reportSort.col === sortKey) reportSort.dir *= -1;
+          else { reportSort.col = sortKey; reportSort.dir = 1; }
+          scheduleRender();
+        };
+        th.addEventListener("click", doSort);
+        th.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " "){ e.preventDefault(); doSort(); }
+        });
+      }
+      head.appendChild(th);
+    }
+    t.appendChild(head);
+    for (const r of sortedRecs()){
+      const tr = el("tr");
+      tr.appendChild(el("td", "mono", r.id));
+      tr.appendChild(el("td", null, r.title || ""));
+      tr.appendChild(el("td", null, recLabel(r)));
+      const claimedMs = (r.times.claimed && r.times.webhook) ? r.times.claimed - r.times.webhook : null;
+      const fetchMs = (r.times.fetchEnd && r.times.fetchStart) ? r.times.fetchEnd - r.times.fetchStart : null;
+      tr.appendChild(el("td", "num", claimedMs != null ? fmtMs(claimedMs) : ""));
+      tr.appendChild(el("td", "num", fetchMs != null ? fmtMs(fetchMs) : ""));
+      for (const st of cfg.llmStages)
+        tr.appendChild(el("td", "num", r.stages[st] && r.stages[st].ms != null ? fmtMs(r.stages[st].ms) : ""));
+      const calls = r.events.filter(ev => ev.kind === "llm.response").length;
+      tr.appendChild(el("td", "num", String(calls)));
+      const passedRules = r.rules.filter(x => x.pass).length;
+      tr.appendChild(el("td", "num", r.rules.length ? (passedRules + "/" + r.rules.length) : ""));
+      tr.appendChild(el("td", null, r.judge ? r.judge.verdict : ""));
+      t.appendChild(tr);
+    }
+    scroll.appendChild(t);
+    s.appendChild(scroll);
+  }
+
+  s.appendChild(el("h3", null, "Findings"));
+  if (model.findings.length){
+    for (const f of model.findings)
+      s.appendChild(el("div", "kv", (f.finding_id || "") + " · " + (f.title || "") + " (" + (f.severity || "") + ")"));
+  } else s.appendChild(el("div", "empty", "None."));
+
+  s.appendChild(el("h3", null, "Known limitations"));
+  if (cfg.limitations.length){
+    const ul = el("ul", "limits");
+    for (const lim of cfg.limitations) ul.appendChild(el("li", null, lim));
+    s.appendChild(ul);
+  } else s.appendChild(el("div", "empty", "None declared by the adapter."));
+
+  s.appendChild(el("div", "foot",
+    "renderer " + RENDERER_VERSION + " · schema " + SCHEMA_VERSION +
+    " · " + model.events.length + " events"));
+  return s;
+}
+
+function render(){
+  const app = document.getElementById("app");
+  const next = document.createDocumentFragment();
+  next.appendChild(renderHeader());
+  const grid = el("div", "grid");
+  grid.appendChild(renderList());
+  grid.appendChild(renderDetail());
+  next.appendChild(grid);
+  next.appendChild(renderFindings());
+  next.appendChild(renderReport());
+  app.textContent = "";
+  app.appendChild(next);
+}
+
+// Batch renders: at most one paint per animation frame, and never more often
+// than every 100 ms, so a fast event burst on a long list stays responsive.
+let renderQueued = false, lastRender = 0;
+function scheduleRender(){
+  if (renderQueued) return;
+  renderQueued = true;
+  const run = () => { renderQueued = false; lastRender = Date.now(); render(); };
+  const wait = Math.max(0, 100 - (Date.now() - lastRender));
+  // A hidden tab pauses requestAnimationFrame, so fall back to a plain timer
+  // there; a visible tab still aligns the paint to a frame for smoothness.
+  setTimeout(() => { if (document.hidden) run(); else requestAnimationFrame(run); }, wait);
+}
+
+function foldAll(events){
+  for (const ev of events) applyEvent(ev);
+  if (!model.selected && model.recOrder.length) model.selected = model.recOrder[0];
+}
+
+// ---- keyboard --------------------------------------------------------------
+// Arrow up/down move selection; number keys switch tabs; Escape clears selection.
+// Keyboard actions are never animated (nothing here triggers a motion transition).
+document.addEventListener("keydown", (e) => {
+  const tag = (e.target && e.target.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+    if (!model.recOrder.length) return;
+    e.preventDefault();
+    const i = model.recOrder.indexOf(model.selected);
+    const next = e.key === "ArrowDown"
+      ? Math.min(model.recOrder.length - 1, i + 1)
+      : Math.max(0, i - 1);
+    selectRec(model.recOrder[next]);
+    return;
+  }
+  if (e.key === "Escape"){
+    if (model.selected){ model.selected = null; scheduleRender(); }
+    return;
+  }
+  if (e.key >= "1" && e.key <= "9" && model.selected){
+    const idx = Number(e.key) - 1;
+    const TABS = tabs();
+    if (idx < TABS.length){ activeTab.name = TABS[idx]; scheduleRender(); }
+  }
+});
+
+// ---- boot ------------------------------------------------------------------
+function bootSnapshot(snap){
+  const s = snap.session || {};
+  applyConfig(s);
+  model.session = s.session || snap.session_name || null;
+  model.connector = s.connector || snap.connector || null;
+  model.started = s.started || snap.started || null;
+  model.frozenAt = snap.frozen_at_id != null ? snap.frozen_at_id
+    : (snap.events && snap.events.length ? snap.events[snap.events.length - 1].id : 0);
+  foldAll(snap.events || []);
+  render();
+}
+
+function bootLive(){
+  fetch("/session").then(r => r.json()).then(sess => {
+    applyConfig(sess);
+    model.session = sess.session; model.connector = sess.connector; model.started = sess.started;
+    render();
+    openStream(0);
+  }).catch(() => { render(); openStream(0); });
+}
+
+let lastSeen = 0, source = null;
+function openStream(after){
+  if (source) source.close();
+  source = new EventSource("/events?after=" + after);
+  source.addEventListener("ev", (e) => {
+    let ev; try { ev = JSON.parse(e.data); } catch (err) { return; }
+    lastSeen = ev.id;
+    applyEvent(ev);
+    if (!model.selected && model.recOrder.length) model.selected = model.recOrder[0];
+    scheduleRender();
+  });
+  source.addEventListener("error", () => {
+    // EventSource reconnects on its own, but a native reconnect replays from
+    // after=0. Recreate it pinned to the last id seen so the tail resumes clean.
+    if (source && source.readyState === EventSource.CLOSED) openStream(lastSeen);
+  });
+}
+
+if (window.EVALENV_SNAPSHOT) bootSnapshot(window.EVALENV_SNAPSHOT);
+else bootLive();
+</script>
+</body>
+</html>

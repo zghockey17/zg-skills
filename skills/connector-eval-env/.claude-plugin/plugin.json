@@ -1,0 +1,9 @@
+{
+  "name": "connector-eval-env",
+  "description": "See what your AI integration is doing, test failure scenarios, and inspect the evidence. A local eval environment with a live monitor, a capture proxy for model calls, vendor failure scenarios, rule checks, and shareable snapshots.",
+  "version": "1.0.0",
+  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
+  "repository": "https://github.com/zghockey17/zg-skills",
+  "license": "MIT",
+  "keywords": ["eval", "integration-testing", "webhooks", "llm", "observability"]
+}

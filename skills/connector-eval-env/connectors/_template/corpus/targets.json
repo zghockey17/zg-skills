@@ -1,0 +1,13 @@
+{
+  "_readme": "Scoring key. Per record: spans that must be absent after redaction (substring + category), names that must survive (must_not_cut), and best_effort spans that are desirable but not hard failures. Keys are the vendor record ids the events carry. Read by engine/evals.py.",
+  "recordings": {
+    "rec_placeholder_001": {
+      "file": "rec_placeholder_001.json",
+      "title": "Placeholder recording",
+      "spans": [
+        {"transcript_index": 0, "category": "contact", "substring": "415-555-0100", "note": "what this span is and why it must be cut"}
+      ],
+      "must_not_cut": ["Alice", "Bob"]
+    }
+  }
+}

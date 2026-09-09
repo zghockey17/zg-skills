@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "data": {
+    "id": "rec_placeholder_001",
+    "title": "Placeholder recording. Replace with the vendor's real detail envelope shape",
+    "recording_at": "2026-01-01T10:00:00Z",
+    "created_at": "2026-01-01T10:00:00Z",
+    "duration": 30,
+    "state": "completed",
+    "transcript": [
+      {"speaker": "Alice", "text": "One planted span goes here: 415-555-0100.", "start": 0.0, "end": 4.0},
+      {"speaker": "Bob", "text": "And a clean line with nothing to cut.", "start": 4.5, "end": 8.0}
+    ]
+  }
+}
