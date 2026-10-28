@@ -13,7 +13,7 @@ These are the branches that change an adapter's implementation. Three questions 
 | 5 | Capture mechanism | patch each model call site, base-URL config, request middleware proxy | How model calls reach the sidecar and what the app carries |
 | 6 | Users | one seeded user, two seeded users, real accounts | Per-user settings coverage and login path |
 | 7 | Scenarios | happy path only, a named failure set, ad hoc | Which vendor assumptions get a scenario |
-| 8 | Where outcomes land | memory or wiki writes, ticket tracker, local session folder | Where findings and lessons go |
+| 8 | Where outcomes land | a team wiki or notes system, ticket tracker, local session folder | Where findings and lessons go |
 
 Judge policy is settled alongside these branches: who grades a run, from what evidence, and where verdicts are written. Grading a model with the same model is circular; the default is a person or a different agent reading the captured prompt, response, and diff, writing verdicts as `eval.judge` events that cite evidence ids.
 

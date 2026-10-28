@@ -1,58 +1,16 @@
 # connector-eval-env
 
-See what your AI integration is doing, test failure scenarios, and inspect the evidence.
+See what your AI integration is doing, break it on purpose, and keep the evidence.
 
 You drive the app in a browser. A read-only monitor page shows every record moving through the pipeline, every model call with its prompt, response, tokens, and timing, and the redaction diff. The terminal switches failure scenarios (duplicate webhooks, stale signatures, slow or failing vendor fetches, revoked keys), scores each run against planted expectations, and freezes the whole session into one shareable HTML file.
 
-This is a Claude Code skill. It works as a plain command-line tool too.
+Use it before you ship a connector that calls a model, when a webhook pipeline misbehaves and you need the exact prompt and event that caused it, or to demo an integration with proof attached. It is a Claude Code skill and also a plain command-line tool. Python standard library only, everything on 127.0.0.1, and the demo needs no API key.
 
-## What you get
-
-| Capability | Works after install | Needs adapter work |
-| --- | --- | --- |
-| Live monitor with per-record timeline, model-call tabs, diff, events | yes (demo) | no |
-| Capture proxy that records every OpenAI-compatible chat call | yes | point your app's model base URL at it |
-| Vendor stub with signed webhooks, retries, and named failure scenarios | yes (demo vendor) | write the stub for your vendor's API shape |
-| Nine rule checks with evidence event ids, judge verdicts, findings, snapshot | yes | targets for your corpus; three hooks for app-backed checks |
-| Reset to a clean slate | yes (demo) | a reset hook that targets only disposable data |
-| A real model provider instead of the stand-in | with a key, see `references/live-provider.md` | no |
-
-Everything binds to 127.0.0.1. Nothing is reachable from another machine.
-
-## Dependencies
-
-- Python 3.10 or newer, standard library only. No pip installs.
-- A browser for the monitor page and the demo app.
-- `lsof` and `ps` (present on macOS and Linux). Windows is untested.
-- Optional: a model provider API key for live runs. The demo needs none.
-
-## Installation
-
-As a Claude Code plugin (recommended):
+## Quick start (the demo, about a minute)
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install connector-eval-env@zg-skills
-```
-
-Then invoke it as `/connector-eval-env`. Run `/reload-plugins` if the install summary asks for it.
-
-As a personal skill, without the plugin system:
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/connector-eval-env ~/.claude/skills/connector-eval-env
-```
-
-As a plain CLI, clone the repo and run `python3 engine/evalenv.py` from `skills/connector-eval-env/`.
-
-Other agent hosts are not verified. The `SKILL.md` follows the Agent Skills specification, so a host that reads that format should load it, but only Claude Code has been tested.
-
-## Quick start (the demo)
-
-From `skills/connector-eval-env/`:
-
-```
+git clone https://github.com/zghockey17/zg-skills
+cd zg-skills/skills/connector-eval-env
 python3 engine/evalenv.py demo up
 ```
 
@@ -75,7 +33,7 @@ python3 engine/evalenv.py demo arrive rec_demo_003
 python3 engine/evalenv.py demo eval rec_demo_003
 ```
 
-Two checks fail, `no_duplicate_filing` and `llm_call_budget`, each with the event ids that prove it. Record it and freeze the session:
+Give the second delivery a few seconds to land as Filed on the monitor before the eval, or `state_reached` also fails while it is still mid-pipeline. Then two checks fail, `no_duplicate_filing` and `llm_call_budget`, each with the event ids that prove it. Record it and freeze the session:
 
 ```
 python3 engine/evalenv.py demo finding "Duplicate delivery files twice" --expected "one item" --actual "two items, six model calls" --repro "scenario dup; arrive rec_demo_003" --severity high
@@ -86,6 +44,48 @@ python3 engine/evalenv.py demo down
 `snapshot.html` in the session folder opens anywhere with no server. `down` stops exactly the four processes `up` started. `up` again starts a fresh session; `reset` while running does the same without leaving the app.
 
 What is live and what is not: the vendor, the app, the webhooks, the pipeline, the capture proxy, and the evals all run live. The **model is a local deterministic stand-in** (`connectors/demo/model.py`) that redacts by rule, so the demo tests the pipeline, not model quality. Nothing leaves the machine.
+
+## What you get
+
+| Capability | Works after install | Needs adapter work |
+| --- | --- | --- |
+| Live monitor with per-record timeline, model-call tabs, diff, events | yes (demo) | no |
+| Capture proxy that records every OpenAI-compatible chat call | yes | point your app's model base URL at it |
+| Vendor stub with signed webhooks, retries, and named failure scenarios | yes (demo vendor) | write the stub for your vendor's API shape |
+| Nine rule checks with evidence event ids, judge verdicts, findings, snapshot | yes | targets for your corpus; three hooks for app-backed checks |
+| Reset to a clean slate | yes (demo) | a reset hook that targets only disposable data |
+| A real model provider instead of the stand-in | with a key, see `references/live-provider.md` | no |
+
+## Dependencies
+
+- Python 3.10 or newer, standard library only. No pip installs.
+- A browser for the monitor page and the demo app.
+- `lsof` and `ps` (present on macOS and Linux). Windows is untested.
+- Optional: a model provider API key for live runs. The demo needs none.
+
+Run the engine tests from the skill folder with `python3 -m unittest discover -s engine/tests -t .`.
+
+## Installation
+
+As a Claude Code plugin (recommended):
+
+```
+/plugin marketplace add zghockey17/zg-skills
+/plugin install connector-eval-env@zg-skills
+```
+
+Then invoke it as `/connector-eval-env`. Run `/reload-plugins` if the install summary asks for it.
+
+As a personal skill, without the plugin system:
+
+```
+git clone https://github.com/zghockey17/zg-skills ~/zg-skills
+ln -s ~/zg-skills/skills/connector-eval-env ~/.claude/skills/connector-eval-env
+```
+
+As a plain CLI, clone the repo and run `python3 engine/evalenv.py` from `skills/connector-eval-env/`.
+
+Other agent hosts are not verified. The `SKILL.md` follows the Agent Skills specification, so a host that reads that format should load it, but only Claude Code has been tested.
 
 ## Usage
 

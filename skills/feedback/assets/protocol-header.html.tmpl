@@ -1,0 +1,55 @@
+<!--
+================================================================================
+  FEEDBACK COPY · {{SIDECAR_BASENAME}}
+================================================================================
+  Forked from: {{SOURCE_BASENAME}} @ {{FORK_SHA}}
+  Forked on:   {{FORK_DATE}}
+  Target:      {{TARGET_PATH}}
+  Reviewer:    {{REVIEWER}}
+  Audience:    Any agent applying this feedback.
+
+  WHY THIS FILE EXISTS
+  --------------------------------------------------------------------------------
+  This is a frozen copy of {{SOURCE_BASENAME}} with an annotation toolkit added.
+  A reviewer clicks elements, types directives, and exports a markdown prompt.
+  The agent applies those directives to the SOURCE file, never to this copy.
+  The source can keep moving while review happens on the snapshot.
+
+  TWO WAYS TO APPLY THIS FEEDBACK
+  --------------------------------------------------------------------------------
+  Flow A (default · exported prompt):
+    1. The reviewer opens this file in a browser, presses A, clicks elements,
+       and types directives.
+    2. "Export Prompt" builds a markdown directive list that starts with
+       "# Feedback on".
+    3. The reviewer pastes it to the agent (or downloads it as
+       feedback-<title>-<date>.md).
+    4. The agent locates each anchor in the source by content, applies each
+       directive, and offers to delete this copy.
+
+  Flow B (fallback · the reviewer edited this file directly):
+    1. diff {{SOURCE_BASENAME}} {{SIDECAR_BASENAME}}
+       Every hunk outside the scaffolding is a directive.
+    2. Three kinds of directive:
+       (a) CONTENT EDIT: text or structure changed in place. Apply verbatim.
+       (b) DELETION: block removed. Delete it from the source.
+       (c) INTENT NOTE: an HTML comment that starts with "FEEDBACK:" followed
+           by the directive text. Interpret it and implement it. If the
+           intent is unclear, ask the author.
+    3. Conflicts: if the source has changed since the fork point in a region
+       the reviewer also edited, do not overwrite silently. Show the conflict
+       and ask which version to keep.
+
+  SCAFFOLDING: never carry these into the source file
+  --------------------------------------------------------------------------------
+  - This protocol header (the HTML comment you are reading).
+  - The <meta charset="utf-8"> line inserted right before it.
+  - The toolkit block between the two marker comments
+      "FEEDBACK TOOLKIT · STRIPPED ON APPLY"  ...  "END FEEDBACK TOOLKIT".
+  Everything else is real content.
+
+  IF YOU (THE AGENT) ARE UNSURE
+  --------------------------------------------------------------------------------
+  Ask the user. Asking costs less than corrupting the source.
+================================================================================
+-->

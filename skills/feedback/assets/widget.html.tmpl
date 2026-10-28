@@ -1,0 +1,427 @@
+<!-- ▼▼▼ FEEDBACK TOOLKIT · STRIPPED ON APPLY · everything between these markers is non-content scaffolding ▼▼▼ -->
+
+<style>
+  .fbk { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #fbk-fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: 22px; z-index: 99998; background: rgba(14,27,34,0.92); backdrop-filter: blur(8px); color: #fff; border: none; border-radius: 999px; padding: 12px 22px; font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 30px -8px rgba(14,27,34,0.45); user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease; }
+  #fbk-fab.on { background: #0b7db8; }
+  #fbk-fab:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 14px 34px -8px rgba(14,27,34,0.5); }
+  #fbk-fab .count { display: inline-block; margin-left: 9px; background: rgba(255,255,255,0.22); padding: 2px 8px; border-radius: 999px; font-size: 11px; min-width: 18px; text-align: center; }
+  #fbk-panel { position: fixed; right: 24px; bottom: 84px; z-index: 99998; width: 380px; max-height: 65vh; background: #fcfeff; border: 1px solid #dceaf2; border-radius: 14px; overflow: hidden; box-shadow: 0 18px 48px -16px rgba(14,27,34,0.3); display: none; flex-direction: column; }
+  #fbk-panel.open { display: flex; }
+  .fbk-panel-head { padding: 12px 16px; background: #0e1b22; color: #fff; font: 600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  .fbk-panel-head .x { cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; opacity: 0.7; }
+  .fbk-panel-head .x:hover { opacity: 1; }
+  #fbk-list { padding: 10px; overflow-y: auto; flex: 1; min-height: 60px; }
+  .fbk-foot { padding: 10px; border-top: 1px solid #dceaf2; display: flex; gap: 8px; }
+  .fbk-btn { background: #0b7db8; color: #fff; border: none; padding: 10px 14px; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; flex: 1; transition: background 0.15s; }
+  .fbk-btn:hover { background: #096794; }
+  .fbk-btn.ghost { background: transparent; color: #0e1b22; border: 1px solid #bfd7e4; }
+  .fbk-btn.ghost:hover { background: rgba(11,125,184,0.07); }
+  .fbk-item { padding: 11px; border: 1px solid #dceaf2; border-radius: 8px; margin-bottom: 8px; background: #fff; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; position: relative; }
+  .fbk-item .ctx { font: 500 10px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #7A6F5A; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; padding-right: 22px; }
+  .fbk-item .snip { font-size: 12px; color: #4a616e; font-style: italic; margin-bottom: 7px; border-left: 2px solid #0b7db8; padding-left: 8px; line-height: 1.4; }
+  .fbk-item .note { font-size: 13px; color: #1A1814; white-space: pre-wrap; line-height: 1.45; }
+  .fbk-item .x { position: absolute; right: 6px; top: 6px; cursor: pointer; color: #7A6F5A; font-size: 14px; line-height: 1; padding: 2px 6px; }
+  .fbk-item .x:hover { color: #B4541E; }
+  .fbk-empty { font: 13px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #7A6F5A; padding: 14px; margin: 0; }
+  .fbk-empty kbd { background: #dceaf2; padding: 1px 5px; border-radius: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+  body.fbk-mode, body.fbk-mode * { cursor: crosshair !important; }
+  body.fbk-mode #fbk-fab, body.fbk-mode #fbk-panel, body.fbk-mode #fbk-fab *, body.fbk-mode #fbk-panel * { cursor: pointer !important; }
+  body.fbk-mode *:hover { outline: 2px solid #0b7db8 !important; outline-offset: 2px; border-radius: 2px; }
+  body.fbk-mode #fbk-fab:hover, body.fbk-mode #fbk-panel:hover, body.fbk-mode #fbk-fab *:hover, body.fbk-mode #fbk-panel *:hover { outline: none !important; }
+  .fbk-modal { position: fixed; inset: 0; background: rgba(14,27,34,0.55); backdrop-filter: blur(3px); z-index: 100000; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .fbk-modal.open { display: flex; }
+  .fbk-modal-box { background: #fcfeff; padding: 26px; width: min(620px, 100%); max-height: 92vh; overflow: auto; border: 1px solid #dceaf2; border-radius: 16px; box-shadow: 0 24px 60px -12px rgba(14,27,34,0.45); }
+  .fbk-modal-box h3 { font: 600 13px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 16px 0; color: #1A1814; }
+  .fbk-modal-box .anchor { background: #f6fafc; padding: 14px; border: 1px solid #dceaf2; border-radius: 10px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .fbk-modal-box .anchor b { font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: 0.05em; color: #7A6F5A; display: block; margin-bottom: 4px; }
+  .fbk-modal-box .anchor .field { margin-bottom: 9px; }
+  .fbk-modal-box .anchor .field:last-child { margin-bottom: 0; }
+  .fbk-modal-box textarea { width: 100%; min-height: 160px; font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; padding: 12px; border-radius: 10px; border: 1px solid #dceaf2; background: #fff; resize: vertical; box-sizing: border-box; outline: none; }
+  .fbk-modal-box textarea:focus { border-color: #0b7db8; }
+  .fbk-modal-box .row { display: flex; gap: 8px; margin-top: 14px; }
+  .fbk-modal-box pre.export { background: #0e1b22; color: #eaf4f9; border-radius: 10px; padding: 18px; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; max-height: 56vh; overflow: auto; white-space: pre-wrap; word-break: break-word; margin: 0; }
+  .fbk-modal-box .hint { font: 13px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #423D33; margin: 0 0 12px 0; }
+  .fbk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .fbk-chip { border: 1px solid #bfd7e4; background: #fff; color: #0e1b22; border-radius: 999px; padding: 5px 11px; font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+  .fbk-chip.on { background: #0b7db8; border-color: #0b7db8; color: #fff; }
+  .fbk-item .type { display: inline-block; font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; color: #0b7db8; border: 1px solid #bfd7e4; border-radius: 999px; padding: 3px 7px; margin-right: 6px; vertical-align: middle; }
+  .fbk-item .note { cursor: text; }
+  .fbk-item .note:hover { background: #f6fafc; }
+  .fbk-item .n { position: absolute; left: -9px; top: -9px; background: #0b7db8; color: #fff; border-radius: 999px; width: 18px; height: 18px; font: 600 10px/18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-align: center; }
+  [data-fbk] { outline: 2px dashed rgba(11,125,184,0.55) !important; outline-offset: 3px; }
+  [data-fbk-pos] { position: relative; }
+  [data-fbk]::before { content: attr(data-fbk); position: absolute; top: -10px; left: -10px; background: #0b7db8; color: #fff; border-radius: 999px; width: 18px; height: 18px; font: 600 10px/18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-align: center; z-index: 99997; pointer-events: none; }
+  .fbk-modal-box .hint code { background: rgba(180,84,30,0.1); padding: 2px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+</style>
+
+<button id="fbk-fab" class="fbk" aria-label="Toggle annotate mode">
+  <span id="fbk-fab-label">Annotate</span><kbd style="background:rgba(255,255,255,0.16); border-radius:4px; padding:2px 7px; margin:0 4px 0 10px; font:600 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">A</kbd><span class="count" id="fbk-count">0</span>
+</button>
+
+<div id="fbk-panel" class="fbk">
+  <div class="fbk-panel-head">
+    <span>Feedback · {{TITLE_HTML}}</span>
+    <span class="x" id="fbk-panel-close" title="Close panel">×</span>
+  </div>
+  <div id="fbk-list"></div>
+  <div class="fbk-foot">
+    <button id="fbk-export" class="fbk-btn">Export Prompt</button>
+    <button id="fbk-clear" class="fbk-btn ghost">Clear all</button>
+  </div>
+</div>
+
+<div id="fbk-modal" class="fbk-modal fbk">
+  <div class="fbk-modal-box">
+    <h3>New annotation</h3>
+    <div id="fbk-modal-anchor" class="anchor"></div>
+    <div class="fbk-chips" id="fbk-chips">
+      <button type="button" class="fbk-chip" data-type="cut">Cut</button>
+      <button type="button" class="fbk-chip" data-type="rewrite">Rewrite</button>
+      <button type="button" class="fbk-chip" data-type="expand">Expand</button>
+      <button type="button" class="fbk-chip" data-type="wrong">Wrong</button>
+      <button type="button" class="fbk-chip" data-type="question">Question</button>
+      <button type="button" class="fbk-chip" data-type="keep">Keep</button>
+    </div>
+    <textarea id="fbk-modal-text" placeholder="What should change here? Be specific. Examples: 'remove this row', 'replace text with X', 'expand this section', 'merge with previous block', 'rewrite headline to emphasize Y'..."></textarea>
+    <div class="row">
+      <button id="fbk-modal-save" class="fbk-btn">Save annotation <span style="opacity:.6;font-weight:500;">⌘↩</span></button>
+      <button id="fbk-modal-cancel" class="fbk-btn ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="fbk-export-modal" class="fbk-modal fbk">
+  <div class="fbk-modal-box">
+    <h3>Prompt for your agent</h3>
+    <p class="hint">Copy this and paste it into your agent session, or download it. The agent applies each item to <code>{{SOURCE_BASENAME_HTML}}</code>.</p>
+    <pre id="fbk-export-text" class="export"></pre>
+    <div class="row">
+      <button id="fbk-export-copy" class="fbk-btn">Copy to clipboard</button>
+      <button id="fbk-export-download" class="fbk-btn">Download .md</button>
+      <button id="fbk-export-close" class="fbk-btn ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Filled by scripts/inject.py as a JSON literal, so quotes in titles or paths are safe.
+  const CFG = {{CONFIG_JSON}};
+  const KEY = CFG.storageKey;
+  const FORK_SHA = CFG.forkId;
+  const TARGET = CFG.target;
+  const TITLE = CFG.title;
+  const REVIEWER = CFG.reviewer;
+  const SOURCE_BASENAME = CFG.sourceBasename;
+  const SIDECAR_BASENAME = CFG.sidecarBasename;
+
+  let mode = false;
+  let items = [];
+  let pendingAnchor = null;
+  let pendingType = '';
+  let editIndex = -1;
+
+  try { items = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e) { items = []; }
+
+  function $(id) { return document.getElementById(id); }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch(e){} render(); }
+
+  function render() {
+    $('fbk-count').textContent = items.length;
+    const list = $('fbk-list');
+    if (items.length === 0) {
+      list.innerHTML = '<p class="fbk-empty">No annotations yet. Click <strong>Annotate</strong> then click any element on the page. Or press <kbd>A</kbd>.</p>';
+      return;
+    }
+    list.innerHTML = items.map((it, i) => {
+      const ctxBits = [it.anchor.plateNo, it.anchor.heading].filter(Boolean).join(' · ');
+      const snip = (it.anchor.snippet || '');
+      const sel = it.anchor.selection || '';
+      return '<div class="fbk-item">' +
+        '<span class="n">' + (i + 1) + '</span>' +
+        '<span class="x" data-i="' + i + '" title="Delete">×</span>' +
+        '<div class="ctx">' + escapeHtml(ctxBits || '-') + '</div>' +
+        (sel ? '<div class="snip"><b>Selected:</b> "' + escapeHtml(sel.slice(0, 110)) + (sel.length > 110 ? '…' : '') + '"</div>'
+             : '<div class="snip">"' + escapeHtml(snip.slice(0, 110)) + (snip.length > 110 ? '…' : '') + '"</div>') +
+        '<div class="note" data-i="' + i + '" title="Click to edit">' + (it.type ? '<span class="type">' + escapeHtml(it.type) + '</span>' : '') + escapeHtml(it.note) + '</div>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.note').forEach(n => n.addEventListener('click', e => {
+      e.stopPropagation();
+      openModal(parseInt(e.currentTarget.dataset.i, 10));
+    }));
+    paintBadges();
+    list.querySelectorAll('.x').forEach(x => x.addEventListener('click', e => {
+      e.stopPropagation();
+      const i = parseInt(e.target.dataset.i, 10);
+      items.splice(i, 1);
+      save();
+    }));
+  }
+
+  function anchorFor(el) {
+    // Find the nearest section-like container. Pages mark sections differently
+    // (`.plate` in slide-style decks, `<section>`, `<article>`, `[data-section]`, or
+    // plain divs under <main>), so try several conventions and take the first hit.
+    const section = el.closest('.plate, section, article, [data-section], main > div');
+    let sectionLabel = '';
+    let sectionTitle = '';
+    if (section) {
+      const lblEl = section.querySelector('.plate-no, [data-section-id], .section-label, .eyebrow, .kicker');
+      sectionLabel = lblEl ? (lblEl.textContent || '').trim() : '';
+      const titleEl = section.querySelector('.plate-title, h1, h2, h3, .section-title, .headline');
+      sectionTitle = titleEl ? (titleEl.textContent || '').trim() : '';
+    }
+
+    let heading = '';
+    if (/^H[1-6]$/i.test(el.tagName)) {
+      heading = (el.textContent || '').trim();
+    } else {
+      let p = el;
+      while (p && p !== document.body) {
+        if (p.previousElementSibling && /^H[2-6]$/i.test(p.previousElementSibling.tagName)) {
+          heading = (p.previousElementSibling.textContent || '').trim(); break;
+        }
+        const localH = p.querySelector ? p.querySelector('h2, h3, h4, .sub, .lbl, .eyebrow, .kicker') : null;
+        if (localH && p.contains(localH)) { heading = (localH.textContent || '').trim(); break; }
+        p = p.parentElement;
+      }
+    }
+
+    const snippet = ((el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim()).slice(0, 240);
+    // A drag-selected phrase is the sharpest anchor there is: the agent greps the exact
+    // words. The click event fires at mouseup, so the selection is still live here.
+    let selection = '';
+    try { selection = (window.getSelection().toString() || '').replace(/\s+/g, ' ').trim().slice(0, 400); } catch (e) {}
+    if (selection.length < 4) selection = '';
+    return { plateNo: sectionLabel, plateTitle: sectionTitle, heading, snippet, selection, tag: el.tagName.toLowerCase() };
+  }
+
+  // Re-find annotated elements after a reload by matching the stored snippet,
+  // then paint a numbered badge on each so the page shows what has feedback.
+  const liveEls = new Map();
+  function paintBadges() {
+    document.querySelectorAll('[data-fbk]').forEach(el => { el.removeAttribute('data-fbk'); el.removeAttribute('data-fbk-pos'); });
+    items.forEach((it, i) => {
+      let el = liveEls.get(it.id);
+      if (!el || !document.contains(el)) {
+        el = null;
+        const cands = document.querySelectorAll(it.anchor.tag || '*');
+        for (const c of cands) {
+          if (c.closest('.fbk, .fbk-modal')) continue;
+          const t = ((c.innerText || c.textContent || '').replace(/\s+/g, ' ').trim()).slice(0, 240);
+          if (t === it.anchor.snippet) { el = c; break; }
+        }
+        if (el) liveEls.set(it.id, el);
+      }
+      if (el) {
+        el.setAttribute('data-fbk', String(i + 1));
+        // The badge needs a positioned host. Only touch elements that are static,
+        // so absolutely or fixed positioned page elements keep their layout.
+        if (getComputedStyle(el).position === 'static') el.setAttribute('data-fbk-pos', '');
+      }
+    });
+  }
+
+  function setType(t) {
+    pendingType = t;
+    document.querySelectorAll('#fbk-chips .fbk-chip').forEach(c => c.classList.toggle('on', c.dataset.type === t));
+  }
+  document.querySelectorAll('#fbk-chips .fbk-chip').forEach(c => c.addEventListener('click', e => {
+    e.stopPropagation();
+    setType(pendingType === c.dataset.type ? '' : c.dataset.type);
+  }));
+
+  function openModal(idx) {
+    editIndex = idx;
+    const it = items[idx];
+    pendingAnchor = it.anchor;
+    $('fbk-modal-anchor').innerHTML = anchorHtml(it.anchor);
+    $('fbk-modal-text').value = it.note;
+    setType(it.type || '');
+    $('fbk-modal').classList.add('open');
+    setTimeout(() => $('fbk-modal-text').focus(), 50);
+  }
+
+  function anchorHtml(a) {
+    return '<div class="field"><b>Section</b>' + escapeHtml(a.plateNo || '-') + (a.plateTitle ? ' · ' + escapeHtml(a.plateTitle) : '') + '</div>' +
+      '<div class="field"><b>Nearest heading</b>' + escapeHtml(a.heading || '-') + '</div>' +
+      (a.selection ? '<div class="field"><b>Selected text</b><span style="font-style:italic;">"' + escapeHtml(a.selection.slice(0, 200)) + (a.selection.length > 200 ? '…' : '') + '"</span></div>' : '') +
+      '<div class="field"><b>Element snippet</b><span style="font-style:italic;">"' + escapeHtml(a.snippet.slice(0, 200)) + (a.snippet.length > 200 ? '…' : '') + '"</span></div>';
+  }
+
+  function toggleMode(force) {
+    mode = typeof force === 'boolean' ? force : !mode;
+    document.body.classList.toggle('fbk-mode', mode);
+    $('fbk-fab').classList.toggle('on', mode);
+    $('fbk-fab-label').textContent = mode ? 'Click element…' : 'Annotate';
+  }
+
+  $('fbk-fab').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!mode && !$('fbk-panel').classList.contains('open') && items.length > 0) {
+      $('fbk-panel').classList.add('open');
+      return;
+    }
+    toggleMode();
+    if (mode) $('fbk-panel').classList.add('open');
+  });
+
+  $('fbk-panel-close').addEventListener('click', () => $('fbk-panel').classList.remove('open'));
+
+  document.addEventListener('click', function(e) {
+    if (!mode) return;
+    if (e.target.closest('#fbk-fab')) return;
+    if (e.target.closest('#fbk-panel')) return;
+    if (e.target.closest('.fbk-modal')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    pendingAnchor = anchorFor(e.target);
+    pendingAnchor._el = e.target;
+    editIndex = -1;
+    setType('');
+    $('fbk-modal-anchor').innerHTML = anchorHtml(pendingAnchor);
+    $('fbk-modal-text').value = '';
+    $('fbk-modal').classList.add('open');
+    setTimeout(() => $('fbk-modal-text').focus(), 50);
+    toggleMode(false);
+  }, true);
+
+  $('fbk-modal-save').addEventListener('click', () => {
+    const note = $('fbk-modal-text').value.trim();
+    if (!note || !pendingAnchor) return;
+    const el = pendingAnchor._el; delete pendingAnchor._el;
+    if (editIndex >= 0) {
+      items[editIndex].note = note;
+      items[editIndex].type = pendingType;
+      items[editIndex].edited = new Date().toISOString();
+    } else {
+      const id = Date.now();
+      items.push({ id, anchor: pendingAnchor, type: pendingType, note: note, ts: new Date().toISOString() });
+      if (el) liveEls.set(id, el);
+    }
+    editIndex = -1;
+    pendingAnchor = null;
+    $('fbk-modal').classList.remove('open');
+    $('fbk-panel').classList.add('open');
+    save();
+  });
+
+  $('fbk-modal-cancel').addEventListener('click', () => {
+    pendingAnchor = null; editIndex = -1;
+    $('fbk-modal').classList.remove('open');
+  });
+
+  $('fbk-clear').addEventListener('click', () => {
+    if (items.length === 0) return;
+    if (!confirm('Clear all ' + items.length + ' annotations? Cannot be undone.')) return;
+    items = [];
+    save();
+  });
+
+  function buildPrompt() {
+    const date = new Date().toISOString().slice(0, 10);
+    const out = [];
+    out.push('# Feedback on ' + TITLE + (REVIEWER ? ' from ' + REVIEWER : '') + ' · ' + date);
+    out.push('');
+    out.push('**Apply to:** `' + TARGET + '`');
+    out.push('**Forked from:** `' + SOURCE_BASENAME + ' @ ' + FORK_SHA + '`');
+    out.push('**Items:** ' + items.length);
+    out.push('');
+    out.push('## How to apply');
+    out.push('Edit the **Apply to** file, not the feedback copy `' + SIDECAR_BASENAME + '`. Each item is anchored by content, not by selector. When an item has **Selected text**, search for that exact phrase first; it is the sharpest locator. Otherwise search for the element snippet, narrowed by the item heading. Apply the directive. If a locator matches zero or several places, ask before acting. When done, summarize the changes and offer to delete `' + SIDECAR_BASENAME + '`.');
+    out.push('');
+    out.push('Type legend: **cut** = delete it · **rewrite** = same meaning, new words · **expand** = add depth or an example · **wrong** = factually incorrect, verify against source before fixing · **question** = answer in chat, do not edit unless the answer implies one · **keep** = do not touch, reference for tone.');
+    out.push('');
+    out.push('---');
+    out.push('');
+    items.forEach((it, i) => {
+      const headerBits = [it.anchor.plateNo, it.anchor.heading].filter(Boolean).join(' · ');
+      out.push('### ' + (i + 1) + ' · ' + (headerBits || 'General'));
+      out.push('');
+      if (it.anchor.plateTitle && it.anchor.plateTitle !== it.anchor.heading) {
+        out.push('**Section title:** ' + it.anchor.plateTitle);
+      }
+      if (it.type) out.push('**Type:** ' + it.type);
+      if (it.anchor.selection) out.push('**Selected text:** *"' + it.anchor.selection + '"*');
+      const snip = it.anchor.snippet || '';
+      out.push('**Element snippet:** *"' + snip.slice(0, 240) + (snip.length > 240 ? '…' : '') + '"*');
+      out.push('');
+      out.push('**Directive:**');
+      out.push('');
+      String(it.note).split('\n').forEach(line => out.push('> ' + line));
+      out.push('');
+    });
+    return out.join('\n');
+  }
+
+  $('fbk-export').addEventListener('click', () => {
+    if (items.length === 0) { alert('No annotations to export.'); return; }
+    $('fbk-export-text').textContent = buildPrompt();
+    $('fbk-export-modal').classList.add('open');
+  });
+
+  $('fbk-export-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('fbk-export-text').textContent);
+      const btn = $('fbk-export-copy');
+      const o = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = o, 1500);
+    } catch (e) {
+      const range = document.createRange();
+      range.selectNodeContents($('fbk-export-text'));
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      alert('Auto-copy blocked. The text is selected; press Cmd+C or Ctrl+C.');
+    }
+  });
+
+  $('fbk-export-download').addEventListener('click', () => {
+    const md = $('fbk-export-text').textContent;
+    if (!md) return;
+    const date = new Date().toISOString().slice(0, 10);
+    const safeTitle = String(TITLE || 'feedback').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'feedback';
+    const filename = 'feedback-' + safeTitle + '-' + date + '.md';
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    const btn = $('fbk-export-download');
+    const o = btn.textContent;
+    btn.textContent = 'Downloaded ✓';
+    setTimeout(() => btn.textContent = o, 1500);
+  });
+
+  $('fbk-export-close').addEventListener('click', () => $('fbk-export-modal').classList.remove('open'));
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && $('fbk-modal').classList.contains('open')) {
+      e.preventDefault(); $('fbk-modal-save').click(); return;
+    }
+    if (e.target && (e.target.isContentEditable || (e.target.matches && e.target.matches('input, textarea, select')))) return;
+    if ((e.key === 'a' || e.key === 'A') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      toggleMode();
+      $('fbk-panel').classList.add('open');
+    } else if (e.key === 'Escape') {
+      if ($('fbk-modal').classList.contains('open')) { pendingAnchor = null; editIndex = -1; $('fbk-modal').classList.remove('open'); }
+      else if ($('fbk-export-modal').classList.contains('open')) { $('fbk-export-modal').classList.remove('open'); }
+      else if (mode) toggleMode(false);
+    }
+  });
+
+  render();
+  // Page scripts may render content after this block runs. Paint badges again
+  // once the full DOM exists.
+  document.addEventListener('DOMContentLoaded', paintBadges);
+})();
+</script>
+<!-- ▲▲▲ END FEEDBACK TOOLKIT ▲▲▲ -->
