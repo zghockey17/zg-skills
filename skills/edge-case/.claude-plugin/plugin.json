@@ -1,0 +1,9 @@
+{
+  "name": "edge-case",
+  "description": "Use the thing you built like a real user, hunt the edge cases that break it, capture evidence for each, fix or report, and re-verify. Works for web apps, CLIs, APIs, and libraries.",
+  "version": "1.0.0",
+  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
+  "repository": "https://github.com/zghockey17/zg-skills",
+  "license": "MIT",
+  "keywords": ["testing", "edge-cases", "qa", "exploratory-testing", "playwright"]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "teach-diff",
+  "description": "Turn a pull request, branch, or commit range into a self-contained interactive HTML lesson: diagrams, real before/after code from the diff, a quiz after each idea, and a defense section that labels how strong each piece of test evidence is.",
+  "version": "1.0.0",
+  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
+  "repository": "https://github.com/zghockey17/zg-skills",
+  "license": "MIT",
+  "keywords": ["code-review", "pull-request", "diff", "explainer", "learning"]
+}

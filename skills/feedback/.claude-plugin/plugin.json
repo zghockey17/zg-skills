@@ -1,0 +1,9 @@
+{
+  "name": "feedback",
+  "description": "Click-to-annotate review for any HTML page. Forks the page into a feedback copy with an annotation toolkit, exports typed, content-anchored notes as a markdown prompt, and applies each note to the source page.",
+  "version": "1.0.0",
+  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
+  "repository": "https://github.com/zghockey17/zg-skills",
+  "license": "MIT",
+  "keywords": ["feedback", "annotation", "html", "review", "prototype"]
+}

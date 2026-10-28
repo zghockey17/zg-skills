@@ -196,9 +196,9 @@ class ResetHookTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             old = os.path.join(root, "old")
             os.makedirs(os.path.join(old, "filed"))
-            open(os.path.join(old, "app-state.json"), "w").write("{}")
-            open(os.path.join(old, "filed", "r.md"), "w").write("x")
-            open(os.path.join(old, "events.jsonl"), "w").write("")
+            for rel, text in (("app-state.json", "{}"), (os.path.join("filed", "r.md"), "x"), ("events.jsonl", "")):
+                with open(os.path.join(old, rel), "w") as f:
+                    f.write(text)
             adapter = {"disposable": {"confirmed": True, "paths": ["app-state.json", "filed"]}}
             out = demo_hooks.reset(adapter, {}, old, os.path.join(root, "new"))
             self.assertEqual(sorted(out["removed"]), ["app-state.json", "filed"])
@@ -209,7 +209,8 @@ class ResetHookTest(unittest.TestCase):
             old = os.path.join(root, "old")
             os.makedirs(old)
             outside = os.path.join(root, "precious.txt")
-            open(outside, "w").write("keep")
+            with open(outside, "w") as f:
+                f.write("keep")
             for bad in (["../precious.txt"], [outside], ["a/../../precious.txt"]):
                 with self.assertRaises(RuntimeError):
                     demo_hooks.reset({"disposable": {"paths": bad}}, {}, old, old)

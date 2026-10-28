@@ -2,7 +2,7 @@
 
 Six phases, walked against `connectors/_template/`. Copy that folder to `connectors/<name>/` first. Every `_about_*` key in its `adapter.json` says what a real value looks like and where the engine reads it; delete those keys when done. `connectors/demo/` is a complete working adapter to crib from.
 
-The first real adapter, a wearable-recorder connector for a meeting app, took the shape below: a vendor that posts signed webhooks, an app with a queue worker and three model calls per record, filed artifacts in a database plus a page on disk.
+The first real adapter took the shape below: a vendor that posts signed webhooks, an app with a queue worker and three model calls per record, filed artifacts in a database plus a page on disk.
 
 ## Phase 1: Grill (writes `decisions.md`)
 
