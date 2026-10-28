@@ -1,9 +1,0 @@
-{
-  "name": "deslop",
-  "description": "Delete-first review of a diff before review or a pull request. Finds structure the request did not need (one-use abstractions, speculative options, dead state, redundant guards, out-of-scope files), proposes the smaller form with an acceptance check, and proves surviving changes in the real flow.",
-  "version": "1.0.0",
-  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
-  "repository": "https://github.com/zghockey17/zg-skills",
-  "license": "MIT",
-  "keywords": ["code-review", "simplification", "diff", "pull-request", "complexity"]
-}

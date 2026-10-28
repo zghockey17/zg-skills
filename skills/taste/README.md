@@ -17,20 +17,20 @@ A rule earns its place with evidence from 3 distinct sessions or because you sai
 
 ## Install
 
-As a Claude Code plugin:
+`taste` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install taste@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s taste
 ```
 
-Manual: clone the repo and symlink the skill into your agent's skills folder.
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/taste ~/.claude/skills/taste    # Claude Code
-ln -s ~/zg-skills/skills/taste ~/.codex/skills/taste     # Codex
-```
+In Claude Code the skill is `/zg:taste`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Your files
 
@@ -65,9 +65,7 @@ Each line of output is a date, the source (`claude` or `codex`), a session id, t
 
 ## Uninstall
 
-Plugin: `/plugin uninstall taste@zg-skills`.
-Manual: remove the symlink.
-Delete `~/.taste/` (or `$TASTE_HOME`) to remove your taste files.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove taste -g`.
 
 ## Credits
 

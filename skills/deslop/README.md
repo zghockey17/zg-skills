@@ -16,23 +16,20 @@ Ask it to apply or simplify and it makes the cuts, verifying after each one.
 
 ## Install
 
-As a Claude Code plugin:
+`deslop` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install deslop@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s deslop
 ```
 
-Manually: clone the repo and symlink the skill into your agent's skills folder.
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/deslop ~/.claude/skills/deslop    # Claude Code
-ln -s ~/zg-skills/skills/deslop ~/.codex/skills/deslop     # Codex
-```
-
-Optional: [lizard](https://github.com/terryyin/lizard) for cyclomatic complexity (`pipx install lizard` or run it with `uvx lizard`).
-Without it the skill falls back to a labeled manual estimate.
+In Claude Code the skill is `/zg:deslop`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Usage
 
@@ -46,8 +43,7 @@ The report is a Before | After | Why table, a list of what was deleted, a comple
 
 ## Uninstall
 
-Plugin: `/plugin uninstall deslop@zg-skills`.
-Manual: `rm ~/.claude/skills/deslop` (or the Codex symlink).
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove deslop -g`.
 
 ## Credits
 

@@ -5,50 +5,31 @@
     "url": "https://github.com/zghockey17"
   },
   "metadata": {
-    "description": "Skills by Zave Greene for Claude Code and other agents"
+    "description": "Skills by Zave Greene for Claude Code, Codex, and other agents"
   },
   "plugins": [
     {
-      "name": "deslop",
-      "source": "./skills/deslop",
-      "description": "Delete-first review of a diff: cut the structure the request did not need before anyone reviews it.",
-      "version": "1.0.0"
-    },
-    {
-      "name": "teach-diff",
-      "source": "./skills/teach-diff",
-      "description": "Turn a pull request or diff into an interactive HTML lesson with quizzes and a testing defense.",
-      "version": "1.0.0"
-    },
-    {
-      "name": "pr-explainer",
-      "source": "./skills/pr-explainer",
-      "description": "Plain-English PR descriptions: what it is, the problem, the fix, where to look, and real evidence it works.",
-      "version": "1.0.0"
-    },
-    {
-      "name": "feedback",
-      "source": "./skills/feedback",
-      "description": "Click-to-annotate any HTML page, export the notes as a prompt, and have your agent apply them.",
-      "version": "1.0.0"
-    },
-    {
-      "name": "edge-case",
-      "source": "./skills/edge-case",
-      "description": "Use what you built like a real user, hunt the edge cases that break it, and prove each fix.",
-      "version": "1.0.0"
-    },
-    {
-      "name": "connector-eval-env",
-      "source": "./skills/connector-eval-env",
-      "description": "See what your AI integration is doing, test failure scenarios, and inspect the evidence.",
-      "version": "1.0.1"
-    },
-    {
-      "name": "taste",
-      "source": "./skills/taste",
-      "description": "Build your own taste skill from the UI corrections you keep making, then hold every render to it.",
-      "version": "1.0.0"
+      "name": "zg",
+      "source": "./",
+      "strict": false,
+      "version": "1.1.0",
+      "description": "Zave Greene's everyday skills: deslop, teach-diff, pr-explainer, feedback, edge-case, taste, and connector-eval-env.",
+      "author": {
+        "name": "Zave Greene",
+        "url": "https://github.com/zghockey17"
+      },
+      "homepage": "https://github.com/zghockey17/zg-skills",
+      "license": "MIT",
+      "category": "development",
+      "skills": [
+        "./skills/deslop",
+        "./skills/teach-diff",
+        "./skills/pr-explainer",
+        "./skills/feedback",
+        "./skills/edge-case",
+        "./skills/taste",
+        "./skills/connector-eval-env"
+      ]
     }
   ]
 }

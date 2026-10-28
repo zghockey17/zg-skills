@@ -13,22 +13,20 @@ The point is a review that starts from understanding, and claims that hold up wh
 
 ## Install
 
-As a Claude Code plugin:
+`pr-explainer` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install pr-explainer@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s pr-explainer
 ```
 
-Manual: clone the repo and symlink the skill folder into your agent's skills directory.
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/pr-explainer ~/.claude/skills/pr-explainer   # Claude Code
-ln -s ~/zg-skills/skills/pr-explainer ~/.codex/skills/pr-explainer    # Codex
-```
-
-It needs only a shell with `git`. The GitHub CLI (`gh`) is used when present to read PRs by number.
+In Claude Code the skill is `/zg:pr-explainer`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Usage
 
@@ -44,8 +42,7 @@ The agent reads the diff, commits, and tests, runs cheap checks where it can, as
 
 ## Uninstall
 
-Plugin: `/plugin uninstall pr-explainer@zg-skills`.
-Manual: remove the symlink, for example `rm ~/.claude/skills/pr-explainer`.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove pr-explainer -g`.
 
 ## License
 

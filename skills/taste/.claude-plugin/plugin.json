@@ -1,9 +1,0 @@
-{
-  "name": "taste",
-  "description": "Build your own taste skill for rendered UI. Setup interviews you and mines your own Claude Code and Codex sessions for the UI corrections you keep making, then writes your principles, house defaults, and an evidence ledger. After that it applies them before every build and reviews the real render before reporting done.",
-  "version": "1.0.0",
-  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
-  "repository": "https://github.com/zghockey17/zg-skills",
-  "license": "MIT",
-  "keywords": ["design", "ui", "frontend", "taste", "design-review", "style-guide"]
-}
