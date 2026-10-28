@@ -17,22 +17,20 @@ Built on Geoffrey Litt's explain-diff idea ([essay](https://www.geoffreylitt.com
 
 ## Install
 
-As a Claude Code plugin:
+`teach-diff` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install teach-diff@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s teach-diff
 ```
 
-Manual: clone the repo and symlink the skill into your agent's skills folder.
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/teach-diff ~/.claude/skills/teach-diff    # Claude Code
-ln -s ~/zg-skills/skills/teach-diff ~/.codex/skills/teach-diff     # Codex
-```
-
-Works best with `git` and, for PR numbers, the GitHub CLI (`gh`) or GitLab CLI (`glab`). A local Chrome or Chromium lets the agent screenshot the lesson to check it renders.
+In Claude Code the skill is `/zg:teach-diff`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Usage
 
@@ -47,9 +45,7 @@ To restyle the lesson, name your colors or fonts; the agent swaps the theme toke
 
 ## Uninstall
 
-Plugin: `/plugin uninstall teach-diff@zg-skills`.
-Manual: `rm ~/.claude/skills/teach-diff` (or the Codex symlink).
-Lessons are plain HTML files wherever the agent saved them; delete them by hand.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove teach-diff -g`.
 
 ## License
 

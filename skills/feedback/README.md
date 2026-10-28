@@ -17,22 +17,20 @@ For a design critique you want the agent to do itself, ask for that instead; thi
 
 ## Install
 
-As a Claude Code plugin:
+`feedback` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install feedback@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s feedback
 ```
 
-Manual: clone the repo and symlink `skills/feedback` into `~/.claude/skills/` (Claude Code) or your agent's skills folder (Codex: `~/.codex/skills/`).
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/feedback ~/.claude/skills/feedback
-```
-
-Requirements: Python 3.8+ (standard library only) for the injection script, and a browser.
-The toolkit makes no network calls and works on `file://` pages.
+In Claude Code the skill is `/zg:feedback`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Usage
 
@@ -49,15 +47,13 @@ rewrote the Pro tagline, removed the Popular ribbon. Answered the FAQ question i
 Delete site/pricing.feedback.html? (y/N)
 ```
 
-Some hosts expose a plugin's root skill namespaced, as `/feedback:feedback`.
+In Claude Code the plugin namespaces it as `/zg:feedback`.
 The script also runs on its own: `python3 scripts/inject.py page.html --title "Pricing v3" [--reviewer Sam]`.
 The export format is documented in `references/export-format.md`.
 
 ## Uninstall
 
-Plugin: `/plugin uninstall feedback@zg-skills`.
-Manual: `rm ~/.claude/skills/feedback`.
-Delete any leftover `*.feedback.html` copies; annotations live in each browser's localStorage under `fbk-<page>-v1` and clear with the site data.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove feedback -g`.
 
 ## License
 

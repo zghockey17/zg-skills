@@ -10,22 +10,20 @@ Tests passing does not mean the feature works. This skill makes the agent use wh
 
 ## Install
 
-As a Claude Code plugin:
+`edge-case` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install edge-case@zg-skills
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s edge-case
 ```
 
-Manually: clone the repo and symlink the skill folder.
-
-```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/edge-case ~/.claude/skills/edge-case   # Claude Code
-ln -s ~/zg-skills/skills/edge-case ~/.codex/skills/edge-case    # Codex
-```
-
-Browser automation is optional. With Playwright or a browser-control extension the agent drives the UI itself; without one it writes numbered manual steps for you and marks those cases `needs-manual`.
+In Claude Code the skill is `/zg:edge-case`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 ## Example
 
@@ -41,8 +39,7 @@ The agent starts the dev server, signs up once, lists cases per field and flow, 
 
 ## Uninstall
 
-Plugin: `/plugin uninstall edge-case@zg-skills`.
-Manual: remove the symlink, for example `rm ~/.claude/skills/edge-case`.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove edge-case -g`.
 
 ## License
 

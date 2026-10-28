@@ -1,9 +1,0 @@
-{
-  "name": "pr-explainer",
-  "description": "Explain pull requests in plain English for a reviewer who never saw the code: what the PR is, the problem, how it fixes it, where to look, and the real evidence it works. Writes the PR description or a review announcement, for one PR or several.",
-  "version": "1.0.0",
-  "author": {"name": "Zave Greene", "url": "https://github.com/zghockey17"},
-  "repository": "https://github.com/zghockey17/zg-skills",
-  "license": "MIT",
-  "keywords": ["pull-request", "code-review", "pr-description", "writing", "git"]
-}

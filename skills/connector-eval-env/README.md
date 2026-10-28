@@ -65,27 +65,24 @@ What is live and what is not: the vendor, the app, the webhooks, the pipeline, t
 
 Run the engine tests from the skill folder with `python3 -m unittest discover -s engine/tests -t .`.
 
-## Installation
+## Install
 
-As a Claude Code plugin (recommended):
-
-```
-/plugin marketplace add zghockey17/zg-skills
-/plugin install connector-eval-env@zg-skills
-```
-
-Then invoke it as `/connector-eval-env`. Run `/reload-plugins` if the install summary asks for it.
-
-As a personal skill, without the plugin system:
+`connector-eval-env` ships in the `zg` plugin with the rest of zg-skills. Pick one route per agent; mixing them installs every skill twice.
 
 ```
-git clone https://github.com/zghockey17/zg-skills ~/zg-skills
-ln -s ~/zg-skills/skills/connector-eval-env ~/.claude/skills/connector-eval-env
+# Claude Code
+claude plugin install zg --marketplace zghockey17/zg-skills
+
+# Codex
+codex plugin marketplace add zghockey17/zg-skills && codex plugin add zg@zg-skills
+
+# Any agent that reads SKILL.md files (Cursor, Copilot, OpenCode, and others)
+npx skills@latest add zghockey17/zg-skills -g -s connector-eval-env
 ```
+
+In Claude Code the skill is `/zg:connector-eval-env`. Inside a session, `/plugin install zg --marketplace zghockey17/zg-skills` does the same as the first command.
 
 As a plain CLI, clone the repo and run `python3 engine/evalenv.py` from `skills/connector-eval-env/`.
-
-Other agent hosts are not verified. The `SKILL.md` follows the Agent Skills specification, so a host that reads that format should load it, but only Claude Code has been tested.
 
 ## Usage
 
@@ -154,11 +151,9 @@ Logs for every process are in `sessions/<stamp>/run/`.
 
 ## Uninstall
 
-Plugin: `/plugin uninstall connector-eval-env@zg-skills`, then `/plugin marketplace remove zg-skills` if nothing else uses it.
+Claude Code: `claude plugin uninstall zg`. Codex: `codex plugin remove zg@zg-skills`. `npx skills`: `npx skills@latest remove connector-eval-env -g`.
 
-Personal skill: `rm ~/.claude/skills/connector-eval-env` (the symlink) and delete the clone.
-
-Either way, run `python3 engine/evalenv.py demo down` first if a session is live. The skill writes only inside its own folder (`sessions/`), so deleting the folder removes everything.
+Run `python3 engine/evalenv.py demo down` first if a session is live. The skill writes only inside its own folder (`sessions/`), so removing it removes everything.
 
 ## License
 
